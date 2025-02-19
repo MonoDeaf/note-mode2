@@ -1,0 +1,654 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Note</title>
+  <link rel="manifest" href="/smart-note/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600&family=Lato:wght@400;700&family=Poppins:wght@400;500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+  <script type="module" src="app.js"></script>
+  <style>
+    .dot-menu svg {
+      fill: currentColor;
+    }
+    
+    .pwa-download {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      background-color: #0a0a0a;
+      color: white;
+      text-decoration: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+      font-size: 0.9rem;
+      z-index: 10;
+      border: 1px solid #1e1e1e;
+    }
+
+    .pwa-download:hover {
+      background-color: #121212;
+    }
+
+    @media (max-width: 768px) {
+      .pwa-download {
+        top: 1rem;
+        right: 1rem;
+        padding: 0.6rem 1rem;
+        font-size: 0.8rem;
+      }
+    }
+    .error-message {
+      color: var(--danger);
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .error-message.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <button class="menu-toggle" id="menu-toggle">
+    <img src="https://static-00.iconduck.com/assets.00/sidebar-expand-icon-512x512-uk1vk52t.png" alt="Toggle menu">
+  </button>
+  <div id="login-splash" class="login-splash active">
+    <div class="login-columns">
+      <div class="login-image-column"></div>
+      <div class="login-form-column">
+        <div class="login-container">
+          <div class="login-header">
+            <h1>Smart Note</h1>
+            <p>Sign in to get started</p>
+          </div>
+          <form id="login-form" class="login-form">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" required placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" required placeholder="Enter your password">
+              <div class="error-message" id="login-error"></div>
+            </div>
+            <button type="submit" class="login-btn">Sign In</button>
+            <button type="button" class="register-btn" id="show-register">Create Account</button>
+          </form>
+          <form id="register-form" class="register-form hidden">
+            <div class="form-group">
+              <label for="register-email">Email</label>
+              <input type="email" id="register-email" required placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+              <label for="register-password">Password</label>
+              <input type="password" id="register-password" required placeholder="Choose a password">
+            </div>
+            <div class="form-group">
+              <label for="confirm-password">Confirm Password</label>
+              <input type="password" id="confirm-password" required placeholder="Confirm your password">
+              <div class="error-message" id="register-error"></div>
+            </div>
+            <button type="submit" class="login-btn">Create Account</button>
+            <button type="button" class="register-btn" id="show-login">Back to Login</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getLatestVersion } from './updates.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7B2fH-dy70Zr3DGs0QBkVo84cPBWOopI",
+      authDomain: "smart-note-ea71b.firebaseapp.com",
+      databaseURL: "https://smart-note-ea71b-default-rtdb.firebaseio.com",
+      projectId: "smart-note-ea71b",
+      storageBucket: "smart-note-ea71b.appspot.com",
+      messagingSenderId: "18321689678",
+      appId: "1:18321689678:web:317c7894a0150bd481c71f",
+      measurementId: "G-2QPK5FM23G"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth();
+    const database = getDatabase();
+
+    // Make database and functions available globally
+    window.database = database;
+    window.getDatabase = () => database;
+    window.ref = ref;
+    window.set = set;
+    window.get = get;
+    window.onValue = onValue;
+
+    document.getElementById('show-register').addEventListener('click', () => {
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('register-form').classList.remove('hidden');
+      document.getElementById('login-error').classList.remove('active');
+      document.getElementById('register-error').classList.remove('active');
+    });
+
+    document.getElementById('show-login').addEventListener('click', () => {
+      document.getElementById('register-form').classList.add('hidden');
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('login-error').classList.remove('active');
+      document.getElementById('register-error').classList.remove('active');
+    });
+
+    function showError(formId, message) {
+      const errorElement = document.getElementById(`${formId}-error`);
+      errorElement.textContent = message;
+      errorElement.classList.add('active');
+      
+      setTimeout(() => {
+        errorElement.classList.remove('active');
+      }, 5000);
+    }
+
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (password !== confirmPassword) {
+        showError('register', 'Passwords do not match');
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        document.getElementById('login-splash').classList.remove('active');
+      } catch (error) {
+        let errorMessage = '';
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = 'An account already exists with this email';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Please enter a valid email address';
+            break;
+          case 'auth/operation-not-allowed':
+            errorMessage = 'Account creation is currently disabled';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'Password should be at least 6 characters';
+            break;
+          default:
+            errorMessage = 'An error occurred during registration';
+        }
+        showError('register', errorMessage);
+      }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById('login-splash').classList.remove('active');
+      } catch (error) {
+        showError('login', 'Credentials do not match our records');
+      }
+    });
+
+    document.getElementById('logout-button').addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        document.getElementById('login-splash').classList.add('active');
+      } catch (error) {
+        console.error('Logout failed:', error);
+      }
+    });
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        window.taskManager.setCurrentUser(user);
+        window.uiManager.setCurrentUser(user);
+        document.getElementById('login-splash').classList.remove('active');
+        document.getElementById('current-user-email').textContent = user.email;
+      } else {
+        document.getElementById('login-splash').classList.add('active');
+        document.getElementById('current-user-email').textContent = 'Not logged in';
+        window.taskManager.setCurrentUser(null);
+        window.uiManager.setCurrentUser(null);
+      }
+    });
+
+    document.getElementById('save-settings').addEventListener('click', async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const username = document.getElementById('username').value || 'User';
+        const theme = document.getElementById('theme-toggle').checked ? 'dark' : 'light';
+        
+        try {
+          await set(ref(database, `users/${user.uid}`), {
+            username,
+            theme
+          });
+          
+          document.getElementById('welcome').textContent = `Welcome, ${username}`;
+        } catch (error) {
+          console.error('Error saving settings:', error);
+        }
+      }
+    });
+
+    // Get and set version number when the page loads
+    const versionElement = document.getElementById('app-version');
+    if (versionElement) {
+      versionElement.textContent = getLatestVersion();
+    }
+  </script>
+
+  <div class="container">
+    <nav class="sidebar">
+      <ul class="top-menu">
+        <li><a href="#" class="active" data-page="home" data-tooltip="Home">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+        </a></li>
+        <li><a href="#" data-page="groups" data-tooltip="Groups">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+          </svg>
+        </a></li>
+        <li><a href="#" data-page="graphs" data-tooltip="Analytics">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/>
+          </svg>
+        </a></li>
+        <li><a href="#" data-page="updates" data-tooltip="Updates" style="position: relative;">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12zM12.5 8v4.25l3.5 2.08-.72 1.21L11 13V8h1.5z"/>
+          </svg>
+        </a></li>
+      </ul>
+      <ul class="bottom-menu">
+        <li><a href="#" data-page="settings" data-tooltip="Settings">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+        </a></li>
+      </ul>
+    </nav>
+    
+    <main>
+      <div id="home-page" class="page active">
+        <h1 id="welcome">Welcome, User</h1>
+        <h1>Note Mode</h1>
+        <p>Create a group to get started</p>
+      </div>
+
+      <div id="groups-page" class="page">
+        <div class="group-header">
+          <h2 id="group-title">Group Title</h2>
+        </div>
+        
+        <div class="tasks-container">
+          <div class="tasks-list">
+            <div class="tasks-header">
+              <h3>Notes</h3>
+              <div class="tasks-actions">
+                <button id="add-task" class="btn">Add Note</button>
+              </div>
+            </div>
+            <div id="incomplete-tasks"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="graphs-page" class="page">
+        <h2>Note Analytics</h2>
+        <div class="tasks-container">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Total Notes</h3>
+              <div class="stat-value" id="total-tasks">0</div>
+            </div>
+            <div class="stat-card">
+              <h3>Most Active Day</h3>
+              <div class="stat-value" id="most-active-day">N/A</div>
+            </div>
+            <div class="stat-card">
+              <h3>Peak Activity Time</h3>
+              <div class="stat-value" id="peak-activity-time">N/A</div>
+            </div>
+            <div class="stat-card">
+              <h3>Longest Streak</h3>
+              <div class="stat-value" id="longest-streak">0 days</div>
+            </div>
+          </div>
+          <div class="chart-grid">
+            <div class="chart-card">
+              <h3>All Notes Overview</h3>
+              <canvas id="allTasksChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Note Creation Trend</h3>
+              <canvas id="creationTrendChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>24-Hour Activity Pattern</h3>
+              <canvas id="activityHeatChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Weekly Activity Pattern</h3>
+              <canvas id="weekdayActivityChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-page" class="page">
+        <h2>Settings</h2>
+        <div class="settings-form">
+          <div class="settings-section">
+            <h3>Profile</h3>
+            <div class="form-group">
+              <label>Username</label>
+              <input type="text" id="username" placeholder="Enter your name">
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+              <button class="btn" id="save-settings">Save</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>Preferences</h3>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Dark Mode</label>
+                <p>Switch between dark and light theme</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="theme-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="sound-grid">
+              <label class="sound-option">
+                <input type="radio" name="completion-sound" value="party">
+                <div class="sound-preview">
+                  <button type="button" class="play-button" data-sound="party">
+                    <span class="iconify" data-icon="mdi:play" width="20" height="20"></span>
+                  </button>
+                  <div class="sound-name">Party</div>
+                </div>
+              </label>
+              <label class="sound-option">
+                <input type="radio" name="completion-sound" value="message" checked>
+                <div class="sound-preview">
+                  <button type="button" class="play-button" data-sound="message">
+                    <span class="iconify" data-icon="mdi:play" width="20" height="20"></span>
+                  </button>
+                  <div class="sound-name">Message</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>App Details</h3>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Version</label>
+                <p id="app-version">-.-.-</p>
+              </div>
+            </div>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Developer</label>
+                <p>MonoDeaf <a href="https://x.com/monodeaf" target="_blank" class="x-link">
+                  <span class="iconify" data-icon="simple-icons:x" target="_blank" style="color: currentColor;" width="14" height="14"></span>
+                </a></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>Account</h3>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Current User</label>
+                <p id="current-user-email">Loading...</p>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+              <button class="btn danger" id="logout-button">Log Out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="updates-page" class="page">
+        <h2>Updates</h2>
+        <div class="updates-container">
+          <!-- Updates will be loaded here dynamically -->
+        </div>
+      </div>
+
+      <div id="group-stats" class="group-grid"></div>
+    </main>
+  </div>
+
+  <dialog id="new-task-modal">
+    <form method="dialog">
+      <h3>Create Note</h3>
+      <div class="form-group">
+        <label for="task-title">Title</label>
+        <input type="text" id="task-title" placeholder="Give your note a title..." required>
+      </div>
+      <div class="modal-buttons">
+        <button type="button" class="btn secondary" id="cancel-task">Cancel</button>
+        <button type="submit" class="btn">Create Note</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="new-group-modal">
+    <form method="dialog">
+      <h3>Create a new group</h3>
+      <input type="text" id="group-name" placeholder="Group Name. eg Daily Notes" required>
+      
+      <div class="group-customization">
+        <div class="color-picker">
+          <h4>Choose group color</h4>
+          <div class="color-options">
+            <button type="button" class="color-option" data-color="#FF6B6B" style="background-color: #FF6B6B"></button>
+            <button type="button" class="color-option" data-color="#FFC069" style="background-color: #FFC069"></button>
+            <button type="button" class="color-option" data-color="#4ECDC4" style="background-color: #4ECDC4"></button>
+            <button type="button" class="color-option" data-color="#45B7D1" style="background-color: #45B7D1"></button>
+            <button type="button" class="color-option" data-color="#96CEB4" style="background-color: #96CEB4"></button>
+            <button type="button" class="color-option" data-color="#FFB3B3" style="background-color: #FFB3B3"></button>
+            <button type="button" class="color-option" data-color="#BFACE2" style="background-color: #BFACE2"></button>
+            <button type="button" class="color-option" data-color="#A6D1E6" style="background-color: #A6D1E6"></button>
+            <button type="button" class="color-option" data-color="#FFDEB4" style="background-color: #FFDEB4"></button>
+            <button type="button" class="color-option" data-color="#B5D5C5" style="background-color: #B5D5C5"></button>
+            <button type="button" class="color-option" data-color="#F8C4B4" style="background-color: #F8C4B4"></button>
+            <button type="button" class="color-option" data-color="#E8A0BF" style="background-color: #E8A0BF"></button>
+            <button type="button" class="color-option" data-color="#B4E4FF" style="background-color: #B4E4FF"></button>
+            <button type="button" class="color-option" data-color="#95BDFF" style="background-color: #95BDFF"></button>
+            <button type="button" class="color-option" data-color="#B4CDE6" style="background-color: #B4CDE6"></button>
+            <button type="button" class="color-option" data-color="#FF1E1E" style="background-color: #FF1E1E"></button>
+            <button type="button" class="color-option" data-color="#FF9900" style="background-color: #FF9900"></button>
+            <button type="button" class="color-option" data-color="#FFE600" style="background-color: #FFE600"></button>
+            <button type="button" class="color-option" data-color="#14FF00" style="background-color: #14FF00"></button>
+            <button type="button" class="color-option" data-color="#00FFF0" style="background-color: #00FFF0"></button>
+            <button type="button" class="color-option" data-color="#0066FF" style="background-color: #0066FF"></button>
+            <button type="button" class="color-option" data-color="#9933FF" style="background-color: #9933FF"></button>
+            <button type="button" class="color-option" data-color="#FF00FF" style="background-color: #FF00FF"></button>
+            <button type="button" class="color-option" data-color="#FF0099" style="background-color: #FF0099"></button>
+            <button type="button" class="color-option" data-color="#00FF66" style="background-color: #00FF66"></button>
+            <button type="button" class="color-option" data-color="#ff4a00" style="background-color: #ff4a00"></button>
+            <button type="button" class="color-option" data-color="#d5dcdc" style="background-color: #d5dcdc"></button>
+          </div>
+        </div>
+
+        <div class="image-picker">
+          <h4>Choose group Image</h4>
+          <div class="image-grid" id="unsplash-images"></div>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button type="button" class="btn secondary" id="cancel-group">Cancel</button>
+        <button type="submit" class="btn">Create</button>
+      </div>
+    </form>
+  </dialog>
+  
+  <div class="note-editor">
+    <div class="note-editor-header">
+      <h3>Note</h3>
+      <div class="text-controls">
+        <div class="note-control-group">
+          <button class="text-control-btn" data-action="formatBlock" data-value="h1" title="Heading 1">
+            <span class="iconify" data-icon="mdi:format-header-1"></span>
+          </button>
+          <button class="text-control-btn" data-action="formatBlock" data-value="h2" title="Heading 2">
+            <span class="iconify" data-icon="mdi:format-header-2"></span>
+          </button>
+          <button class="text-control-btn" data-action="formatBlock" data-value="h3" title="Heading 3">
+            <span class="iconify" data-icon="mdi:format-header-3"></span>
+          </button>
+        </div>
+        <div class="separator"></div>
+        <div class="note-control-group">
+          <button class="text-control-btn" data-action="bold" title="Bold">
+            <span class="iconify" data-icon="mdi:format-bold"></span>
+          </button>
+          <button class="text-control-btn" data-action="italic" title="Italic">
+            <span class="iconify" data-icon="mdi:format-italic"></span>
+          </button>
+          <button class="text-control-btn" data-action="underline" title="Underline">
+            <span class="iconify" data-icon="mdi:format-underline"></span>
+          </button>
+        </div>
+        <div class="separator"></div>
+        <div class="note-control-group">
+          <select class="font-family-select" title="Font Family">
+            <option value="Arimo">Arimo</option>
+            <option value="Roboto">Roboto</option>
+            <option value="Open Sans">Open Sans</option>
+            <option value="Lato">Lato</option>
+            <option value="Poppins">Poppins</option>
+            <option value="Montserrat">Montserrat</option>
+          </select>
+          <select class="font-size-select" title="Font Size">
+            <option value="1">Small</option>
+            <option value="2">Medium</option>
+            <option value="3">Large</option>
+            <option value="4">X-Large</option>
+            <option value="5">XX-Large</option>
+          </select>
+          <button class="text-control-btn color-picker-btn" title="Text Color">
+            <span class="iconify" data-icon="mdi:format-color-text"></span>
+            <input type="color" class="color-picker-input" value="#ffffff">
+          </button>
+        </div>
+        <div class="separator"></div>
+        <div class="note-control-group">
+          <button class="text-control-btn" data-action="insertUnorderedList" title="Bullet List">
+            <span class="iconify" data-icon="mdi:format-list-bulleted"></span>
+          </button>
+          <button class="text-control-btn" data-action="insertOrderedList" title="Numbered List">
+            <span class="iconify" data-icon="mdi:format-list-numbered"></span>
+          </button>
+        </div>
+      </div>
+      <button class="done-button">Save</button>
+    </div>
+    <div class="note-content">
+      <div class="note-textarea" contenteditable="true" placeholder="Write your note here... (Tip: Use the '/' key to access formatting commands)"></div>
+    </div>
+  </div>
+
+  <div class="command-palette">
+    <div class="command-search">
+      <input type="text" placeholder="Type a command..." />
+    </div>
+    <div class="command-list">
+      <!-- Commands will be populated dynamically -->
+    </div>
+  </div>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/smart-task/sw.js")
+        .then(() => console.log("Service Worker Registered!"))
+        .catch(err => console.error("Service Worker Registration Failed:", err));
+    }
+
+    const themeToggle = document.getElementById('theme-toggle');
+    if (localStorage.getItem('theme') === 'light') {
+      document.body.classList.add('light-mode');
+      themeToggle.checked = false;
+    }
+    
+    themeToggle.addEventListener('change', () => {
+      document.body.classList.toggle('light-mode', !themeToggle.checked);
+      localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
+    });
+  </script>
+  <script>
+    document.querySelector('#new-task-modal form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('task-title')?.value || '';
+      
+      if (window.taskManager.currentGroup) {
+        const note = window.taskManager.createNote(
+          window.taskManager.currentGroup.id, 
+          title
+        );
+        if (note) {
+          window.uiManager.updateGroupPage(window.taskManager.currentGroup.id);
+        }
+      }
+      
+      e.target.reset();
+      document.getElementById('new-task-modal')?.close();
+    });
+  </script>
+  <script>
+    const colorPicker = document.querySelector('.color-picker-input');
+    const colorPickerBtn = document.querySelector('.color-picker-btn');
+  
+    // Set initial color
+    colorPickerBtn.style.setProperty('--current-color', colorPicker.value);
+  
+    // Update dot color when picker changes
+    colorPicker.addEventListener('input', (e) => {
+      colorPickerBtn.style.setProperty('--current-color', e.target.value);
+    });
+  
+    colorPicker.addEventListener('change', (e) => {
+      colorPickerBtn.style.setProperty('--current-color', e.target.value);
+    });
+  </script>
+</body>
+</html>
