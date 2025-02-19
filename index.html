@@ -2,8 +2,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Note Mode</title>
-  <link rel="manifest" href="/note-mode/manifest.json">
+  <title>Smart Note</title>
+  <link rel="manifest" href="/smart-note/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,6 +15,26 @@
   <style>
     .dot-menu svg {
       fill: currentColor;
+    }
+    
+    .pwa-download {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      background-color: #0a0a0a;
+      color: white;
+      text-decoration: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+      font-size: 0.9rem;
+      z-index: 10;
+      border: 1px solid #1e1e1e;
+    }
+
+    .pwa-download:hover {
+      background-color: #121212;
     }
 
     @media (max-width: 768px) {
@@ -53,8 +73,8 @@
       <div class="login-form-column">
         <div class="login-container">
           <div class="login-header">
-            <h1>Note Mode</h1>
-            <p>Your Notes, Always In Sync.</p>
+            <h1>Smart Note</h1>
+            <p>Sign in to get started</p>
           </div>
           <form id="login-form" class="login-form">
             <div class="form-group">
@@ -593,25 +613,6 @@
     themeToggle.addEventListener('change', () => {
       document.body.classList.toggle('light-mode', !themeToggle.checked);
       localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
-    });
-  </script>
-  <script>
-    document.querySelector('#new-task-modal form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const title = document.getElementById('task-title')?.value || '';
-      
-      if (window.taskManager.currentGroup) {
-        const note = window.taskManager.createNote(
-          window.taskManager.currentGroup.id, 
-          title
-        );
-        if (note) {
-          window.uiManager.updateGroupPage(window.taskManager.currentGroup.id);
-        }
-      }
-      
-      e.target.reset();
-      document.getElementById('new-task-modal')?.close();
     });
   </script>
   <script>

@@ -132,7 +132,11 @@ export class UIManager {
 
     const newTaskForm = document.querySelector('#new-task-modal form');
     if (newTaskForm) {
-      newTaskForm.addEventListener('submit', (e) => {
+      // Remove any existing listeners before adding a new one
+      const newForm = newTaskForm.cloneNode(true);
+      newTaskForm.parentNode.replaceChild(newForm, newTaskForm);
+      
+      newForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const title = document.getElementById('task-title')?.value || '';
         
@@ -875,7 +879,7 @@ export class UIManager {
     const uploadInput = document.getElementById('upload-notes');
     if (uploadInput) {
       uploadInput.addEventListener('change', (e) => {
-        this.uploadGroupNotes(group.id, e.target.files[0]);
+        this.uploadGroupNotes(groupId, e.target.files[0]);
       });
     }
 
@@ -943,7 +947,7 @@ export class UIManager {
           });
         }
         
-        incompleteTasks.prepend(taskElement);
+        incompleteTasks.appendChild(taskElement);
       });
     }
 
@@ -1066,7 +1070,7 @@ export class UIManager {
         });
       }
 
-      incompleteTasks.prepend(taskElement);
+      incompleteTasks.appendChild(taskElement);
     });
   }
 
@@ -1415,6 +1419,129 @@ export class UIManager {
         }]
       }
     });
+
+    const editStats = this.taskManager.getGroupEditStats(groupId);
+    if (!editStats) return;
+
+    // Add text activity charts
+    const textActivityContainer = document.createElement('div');
+    textActivityContainer.className = 'chart-grid';
+    textActivityContainer.innerHTML = `
+      <div class="chart-card">
+        <h3>Text Activity Overview</h3>
+        <div class="stats-overview">
+          <div class="mini-stat">
+            <span class="stat-label">Total Characters</span>
+            <span class="stat-value">${editStats.totalCharacters.toLocaleString()}</span>
+          </div>
+          <div class="mini-stat">
+            <span class="stat-label">Avg. Characters/Note</span>
+            <span class="stat-value">${editStats.averageCharactersPerNote.toLocaleString()}</span>
+          </div>
+        </div>
+        <canvas id="textActivityChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Hourly Text Activity</h3>
+        <canvas id="hourlyActivityChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Daily Character Distribution</h3>
+        <canvas id="dailyCharactersChart"></canvas>
+      </div>
+    `;
+
+    document.querySelector('.tasks-container').appendChild(textActivityContainer);
+
+    // Text Activity Chart
+    this.charts.textActivity = new Chart('textActivityChart', {
+      type: 'line',
+      data: {
+        labels: editStats.editHistory.map(entry => entry.date),
+        datasets: [{
+          label: 'Characters Added',
+          data: editStats.editHistory.map(entry => entry.characters),
+          borderColor: '#4ECDC4',
+          backgroundColor: 'rgba(78, 205, 196, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => value.toLocaleString()
+            }
+          }
+        }
+      }
+    });
+
+    // Hourly Activity Chart
+    this.charts.hourlyActivity = new Chart('hourlyActivityChart', {
+      type: 'bar',
+      data: {
+        labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+        datasets: [{
+          data: editStats.textEditsByHour,
+          backgroundColor: '#45B7D1',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    });
+
+    // Daily Characters Chart
+    this.charts.dailyCharacters = new Chart('dailyCharactersChart', {
+      type: 'bar',
+      data: {
+        labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        datasets: [{
+          data: editStats.charactersByDay,
+          backgroundColor: '#96CEB4',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => value.toLocaleString()
+            }
+          }
+        }
+      }
+    });
   }
 
   updateGraphsPage() {
@@ -1678,30 +1805,6 @@ export class UIManager {
     }, 30 * 60 * 1000);
   }
 
-  downloadGroupNotes(group) {
-    const notes = Array.from(group.tasks.values()).map(task => ({
-      title: task.title,
-      notes: task.notes || '',
-      createdAt: task.createdAt,
-      completedAt: task.completedAt
-    }));
-
-    const groupData = {
-      groupName: group.name,
-      notes: notes
-    };
-
-    const blob = new Blob([JSON.stringify(groupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${group.name.toLowerCase().replace(/\s+/g, '-')}-notes.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
   uploadGroupNotes(groupId, file) {
     if (!file) return;
 
@@ -1714,10 +1817,17 @@ export class UIManager {
             }
 
             data.notes.forEach(note => {
-              const task = this.taskManager.createTask(groupId, note.title);
-              if (task) {
-                this.taskManager.saveTaskNotes(groupId, task.id, note.notes || '');
-              }
+                const newNote = this.taskManager.createNote(
+                    groupId,
+                    note.title
+                );
+                if (newNote) {
+                    this.taskManager.saveNoteContent(
+                        groupId,
+                        newNote.id,
+                        note.notes || ''
+                    );
+                }
             });
 
             this.updateGroupPage(groupId);
@@ -1741,26 +1851,50 @@ export class UIManager {
             };
 
         } catch (error) {
-          const dialog = document.createElement('dialog');
-          dialog.className = 'confirmation-dialog';
-          dialog.innerHTML = `
-            <h3>Upload Failed</h3>
-            <p>The selected file is not a valid notes backup file.</p>
-            <div class="modal-buttons">
-              <button class="btn danger" id="ok-button">OK</button>
-            </div>
-          `;
-          
-          document.body.appendChild(dialog);
-          dialog.showModal();
-          
-          dialog.querySelector('#ok-button').onclick = () => {
-            dialog.close();
-            dialog.remove();
-          };
+            console.error('Error uploading notes:', error);
+            const dialog = document.createElement('dialog');
+            dialog.className = 'confirmation-dialog';
+            dialog.innerHTML = `
+              <h3>Upload Failed</h3>
+              <p>The selected file is not a valid notes backup file.</p>
+              <div class="modal-buttons">
+                <button class="btn danger" id="ok-button">OK</button>
+              </div>
+            `;
+            
+            document.body.appendChild(dialog);
+            dialog.showModal();
+            
+            dialog.querySelector('#ok-button').onclick = () => {
+              dialog.close();
+              dialog.remove();
+            };
         }
     };
     reader.readAsText(file);
+  }
+
+  downloadGroupNotes(group) {
+    const notes = Array.from(group.notes.values()).map(note => ({
+      title: note.title,
+      notes: note.notes || '',
+      createdAt: note.createdAt
+    }));
+
+    const groupData = {
+      groupName: group.name,
+      notes: notes
+    };
+
+    const blob = new Blob([JSON.stringify(groupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${group.name.toLowerCase().replace(/\s+/g, '-')}-notes.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   async setCurrentUser(user) {

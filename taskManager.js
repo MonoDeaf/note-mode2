@@ -77,13 +77,25 @@ export class TaskManager {
     
     const group = this.groups.get(groupId);
     if (group) {
+      // Ensure notes Map exists
       if (!group.notes) {
         group.notes = new Map();
       }
-      group.notes.set(note.id, note);
-      this.saveData();
+      
+      // Check if this exact note already exists
+      const existingNote = Array.from(group.notes.values()).find(n => 
+        n.title === title && 
+        Math.abs(new Date(n.createdAt) - new Date()) < 1000 // Within 1 second
+      );
+      
+      if (!existingNote) {
+        group.notes.set(note.id, note);
+        this.saveData();
+        return note;
+      }
+      return existingNote;
     }
-    return note;
+    return null;
   }
 
   async saveData() {
@@ -302,6 +314,43 @@ export class TaskManager {
         total: notesUpToDate.length
       };
     });
+
+    return stats;
+  }
+
+  getGroupEditStats(groupId) {
+    const group = this.groups.get(groupId);
+    if (!group) return null;
+
+    const stats = {
+      totalCharacters: 0,
+      averageCharactersPerNote: 0,
+      textEditsByHour: new Array(24).fill(0),
+      charactersByDay: new Array(7).fill(0),
+      editHistory: []
+    };
+
+    if (group.notes) {
+      let totalNotes = 0;
+      
+      group.notes.forEach(note => {
+        const noteLength = note.notes ? note.notes.length : 0;
+        stats.totalCharacters += noteLength;
+        totalNotes++;
+
+        const createdAt = new Date(note.createdAt);
+        stats.textEditsByHour[createdAt.getHours()]++;
+        stats.charactersByDay[createdAt.getDay()] += noteLength;
+
+        stats.editHistory.push({
+          date: createdAt.toISOString().split('T')[0],
+          characters: noteLength
+        });
+      });
+
+      stats.averageCharactersPerNote = totalNotes > 0 ? 
+        Math.round(stats.totalCharacters / totalNotes) : 0;
+    }
 
     return stats;
   }
