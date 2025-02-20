@@ -1,6 +1,6 @@
 {
   "name": "Note Mode",
-  "short_name": "noteMode",
+  "short_name": "Note Mode",
   "start_url": "/note-mode/",
   "display": "standalone",
   "background_color": "#0a0a0a",
