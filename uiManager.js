@@ -1,6 +1,7 @@
 export class UIManager {
-  constructor(taskManager) {
+  constructor(taskManager, notificationManager) {
     this.taskManager = taskManager;
+    this.notificationManager = notificationManager;
     this.currentPage = 'home';
     this.tasksChart = null;
     this.selectedBackground = null;
@@ -492,7 +493,7 @@ export class UIManager {
           </div>
           <div style="position: relative; z-index: 1;">
             <h3 style="color: ${textColor}; opacity: 1 !important; font-weight: 600;">${group.name}</h3>
-            <p style="color: ${textColor}; opacity: 1 !important;">${group.tasks ? group.tasks.size : 0} notes</p>
+            <p style="color: ${textColor}; opacity: 1 !important;">${group.notes ? group.notes.size : 0} notes</p>
           </div>
         `;
         

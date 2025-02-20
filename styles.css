@@ -543,6 +543,7 @@ body.light-mode .add-group-card h3 {
   line-height: 1;
   margin-top: 0rem;
   margin-bottom: 0.5rem;
+  letter-spacing: -3px;
 }
 
 #home-page p {
@@ -658,7 +659,6 @@ body.light-mode .add-group-card h3 {
 .chart-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
 }
 
 @media (max-width: 768px) {
@@ -1274,7 +1274,7 @@ dialog[open] {
 .settings-section {
   background-color: var(--bg-secondary);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.2rem;
   margin-bottom: 0; /* Remove margin since we're using grid gap */
   border: 1px solid var(--border-color);
   height: 100%; /* Force all sections to be same height */
@@ -1295,14 +1295,14 @@ dialog[open] {
 }
 
 .settings-section > div:last-child {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 .settings-form {
   max-width: 1200px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 2rem;
+  gap: 1rem;
   padding: 1rem;
 }
 
@@ -1571,6 +1571,14 @@ body.light-mode .menu-toggle:hover {
     margin-top: 3.5rem; /* Added more space at the top on mobile */
   }
 
+  #settings-page h2,
+  #graphs-page h2,
+  #updates-page h2 {
+    margin-top: 3.5rem;
+  }
+}
+
+@media (max-width: 768px) {
   #settings-page h2,
   #graphs-page h2 {
     margin-top: 3.5rem;
@@ -2572,7 +2580,7 @@ body.light-mode .form-group input[type="text"]:focus {
 
 .login-image-column {
   flex: 1;
-  background-image: url('https://yswhu6519_lj8vbt1ojm.c.websim.ai/Screenshot%202025-02-18%20at%2012.46.55%E2%80%AFAM.png?v=10');
+  background-image: url('image.webp');
   background-size: cover;
   background-position: left;
   position: relative;
@@ -2614,6 +2622,7 @@ body.light-mode .form-group input[type="text"]:focus {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
   color: var(--text-primary);
+  letter-spacing: -2px;
 }
 
 .login-header p {
@@ -2647,11 +2656,6 @@ body.light-mode .form-group input[type="text"]:focus {
 .register-form.hidden,
 .login-form.hidden {
   display: none;
-}
-
-.login-form .form-group,
-.register-form .form-group {
-  margin-bottom: 0;
 }
 
 .login-form input,
@@ -2799,4 +2803,36 @@ body.light-mode .form-group input[type="text"]:focus {
   .chart-card {
     padding: 1rem;
   }
+}
+
+.time-input,
+.select-input {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.time-input:focus,
+.select-input:focus {
+  outline: none;
+  border-color: rgba(var(--text-rgb), 0.2);
+}
+
+.notification-settings {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+  max-height: 200px;
+  overflow: auto;
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+}
+
+.notification-settings .preference-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
 }

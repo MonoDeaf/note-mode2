@@ -49,7 +49,7 @@
   </button>
   <div id="login-splash" class="login-splash active">
     <div class="login-columns">
-      <div class="login-image-column"></div>
+      <div class="login-image-column" style="background-image: url('/image.webp')"></div>
       <div class="login-form-column">
         <div class="login-container">
           <div class="login-header">
@@ -210,6 +210,21 @@
         window.uiManager.setCurrentUser(user);
         document.getElementById('login-splash').classList.remove('active');
         document.getElementById('current-user-email').textContent = user.email;
+        
+        // Always navigate to home page after sign in
+        const homeLink = document.querySelector('[data-page="home"]');
+        if (homeLink) {
+          homeLink.classList.add('active');
+          document.querySelectorAll('.sidebar a').forEach(a => {
+            if (a !== homeLink) a.classList.remove('active');
+          });
+        }
+        
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('home-page').classList.add('active');
+        
+        window.uiManager.currentPage = 'home';
+        window.uiManager.updateHomePage();
       } else {
         document.getElementById('login-splash').classList.add('active');
         document.getElementById('current-user-email').textContent = 'Not logged in';
@@ -389,6 +404,59 @@
                   <div class="sound-name">Message</div>
                 </div>
               </label>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>Notifications</h3>
+            <div class="preference-item">
+              <div class="preference-info">
+                <label>Push Notifications</label>
+                <p>Allow notifications for reminders and updates</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notifications-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notification-settings" style="display: none;">
+              <div class="preference-item">
+                <div class="preference-info">
+                  <label>Daily Reminders</label>
+                  <p>Get a daily reminder to write notes</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="daily-reminder-toggle">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="preference-item">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label>Reminder Time</label>
+                  <input type="time" id="reminder-time" class="time-input">
+                </div>
+              </div>
+              <div class="preference-item">
+                <div class="preference-info">
+                  <label>Group Inactivity Alerts</label>
+                  <p>Get reminded when you haven't added notes to a group</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="group-reminder-toggle">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="preference-item">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label>Inactivity Threshold</label>
+                  <select id="inactivity-threshold" class="select-input">
+                    <option value="3">3 days</option>
+                    <option value="5">5 days</option>
+                    <option value="7">1 week</option>
+                    <option value="14">2 weeks</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
