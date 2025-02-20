@@ -2580,7 +2580,7 @@ body.light-mode .form-group input[type="text"]:focus {
 
 .login-image-column {
   flex: 1;
-  background-image: url('image.webp');
+  background-image: url('https://raw.githubusercontent.com/MonoDeaf/note-mode2/refs/heads/main/images/splash-login-image.webp');
   background-size: cover;
   background-position: left;
   position: relative;
@@ -2649,7 +2649,6 @@ body.light-mode .form-group input[type="text"]:focus {
 .register-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
   width: 100%;
 }
 
