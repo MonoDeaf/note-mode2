@@ -209,7 +209,7 @@ export class UIManager {
             opt.classList.remove('selected')
           );
           this.selectedBackground = null;
-          initializeImageGrid();
+          this.initializeImageGrid();
         }
       });
     }
@@ -271,6 +271,9 @@ export class UIManager {
       }
     };
 
+    // Store initializeImageGrid as a property of the class instance
+    this.initializeImageGrid = initializeImageGrid;
+
     initializeImageGrid();
 
     const colorOptions = document.querySelectorAll('.color-option');
@@ -307,14 +310,14 @@ export class UIManager {
             opt.classList.remove('selected')
           );
           this.selectedBackground = null;
-          initializeImageGrid();
+          this.initializeImageGrid(); // Use the stored reference
         }
       });
     }
 
     document.addEventListener('click', (e) => {
       if (e.target.closest('#add-group-card')) {
-        initializeImageGrid();
+        this.initializeImageGrid(); // Use the stored reference
       }
     });
   }
@@ -445,12 +448,16 @@ export class UIManager {
     groupStats.appendChild(addGroupCard);
 
     if (this.taskManager.groups && this.taskManager.groups.size > 0) {
-      this.taskManager.groups.forEach(group => {
+      // Convert groups to array and reverse sort by creation time (assuming group.id is a timestamp)
+      const groupsArray = Array.from(this.taskManager.groups.values())
+        .sort((a, b) => parseInt(b.id) - parseInt(a.id));
+
+      groupsArray.forEach(group => {
         if (!group) return;
         
         const groupCard = document.createElement('div');
         groupCard.className = 'group-card';
-        groupCard.dataset.groupId = group.id;  // Add group ID to card
+        groupCard.dataset.groupId = group.id;
         
         const background = group.background || { type: 'color', value: '#ffffff' };
         const textColor = background.type === 'image' ? '#ffffff' : '#000000';
@@ -497,7 +504,6 @@ export class UIManager {
           </div>
         `;
         
-        // Setup event listeners for group card
         this.setupGroupCardEventListeners(groupCard, group);
         
         groupStats.appendChild(groupCard);

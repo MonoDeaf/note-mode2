@@ -49,7 +49,7 @@
   </button>
   <div id="login-splash" class="login-splash active">
     <div class="login-columns">
-      <div class="login-image-column" style="background-image: url('/note-mode2/images/splash-login-image.webp')"></div>
+      <div class="login-image-column" style="background-image: url('https://raw.githubusercontent.com/MonoDeaf/note-mode2/refs/heads/main/images/splash-login-image.webp')"></div>
       <div class="login-form-column">
         <div class="login-container">
           <div class="login-header">
@@ -512,7 +512,7 @@
         <input type="text" id="task-title" placeholder="Give your note a title..." required>
       </div>
       <div class="modal-buttons">
-        <button type="button" class="btn secondary" id="cancel-task">Cancel</button>
+        <button type="button" class="btn secondary" id="cancel-task" onclick="document.getElementById('new-task-modal').close()">Cancel</button>
         <button type="submit" class="btn">Create Note</button>
       </div>
     </form>
