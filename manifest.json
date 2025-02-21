@@ -3,8 +3,8 @@
   "short_name": "Note Mode",
   "start_url": "/note-mode2/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "var(--bg-primary)",
+  "theme_color": "var(--bg-primary)",
   "icons": [
     {
       "src": "/note-mode2/icons/icon-192x192.png",
