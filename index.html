@@ -122,141 +122,209 @@
     window.get = get;
     window.onValue = onValue;
 
-    document.getElementById('show-register').addEventListener('click', () => {
-      document.getElementById('login-form').classList.add('hidden');
-      document.getElementById('register-form').classList.remove('hidden');
-      document.getElementById('login-error').classList.remove('active');
-      document.getElementById('register-error').classList.remove('active');
-    });
-
-    document.getElementById('show-login').addEventListener('click', () => {
-      document.getElementById('register-form').classList.add('hidden');
-      document.getElementById('login-form').classList.remove('hidden');
-      document.getElementById('login-error').classList.remove('active');
-      document.getElementById('register-error').classList.remove('active');
-    });
-
-    function showError(formId, message) {
-      const errorElement = document.getElementById(`${formId}-error`);
-      errorElement.textContent = message;
-      errorElement.classList.add('active');
-      
-      setTimeout(() => {
-        errorElement.classList.remove('active');
-      }, 5000);
-    }
-
-    document.getElementById('register-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('register-email').value;
-      const password = document.getElementById('register-password').value;
-      const confirmPassword = document.getElementById('confirm-password').value;
-
-      if (password !== confirmPassword) {
-        showError('register', 'Passwords do not match');
-        return;
-      }
-
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        document.getElementById('login-splash').classList.remove('active');
-      } catch (error) {
-        let errorMessage = '';
-        switch (error.code) {
-          case 'auth/email-already-in-use':
-            errorMessage = 'An account already exists with this email';
-            break;
-          case 'auth/invalid-email':
-            errorMessage = 'Please enter a valid email address';
-            break;
-          case 'auth/operation-not-allowed':
-            errorMessage = 'Account creation is currently disabled';
-            break;
-          case 'auth/weak-password':
-            errorMessage = 'Password should be at least 6 characters';
-            break;
-          default:
-            errorMessage = 'An error occurred during registration';
-        }
-        showError('register', errorMessage);
-      }
-    });
-
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById('login-splash').classList.remove('active');
-      } catch (error) {
-        showError('login', 'Credentials do not match our records');
-      }
-    });
-
-    document.getElementById('logout-button').addEventListener('click', async () => {
-      try {
-        await signOut(auth);
-        document.getElementById('login-splash').classList.add('active');
-      } catch (error) {
-        console.error('Logout failed:', error);
-      }
-    });
-
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        window.taskManager.setCurrentUser(user);
-        window.uiManager.setCurrentUser(user);
-        document.getElementById('login-splash').classList.remove('active');
-        document.getElementById('current-user-email').textContent = user.email;
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme toggle functionality
+      const themeToggle = document.getElementById('theme-toggle');
+      if (themeToggle) {
+        const savedTheme = localStorage.getItem('theme');
         
-        // Always navigate to home page after sign in
-        const homeLink = document.querySelector('[data-page="home"]');
-        if (homeLink) {
-          homeLink.classList.add('active');
-          document.querySelectorAll('.sidebar a').forEach(a => {
-            if (a !== homeLink) a.classList.remove('active');
-          });
+        if (savedTheme === 'light') {
+          document.body.classList.add('light-mode');
+          themeToggle.checked = false;
+        } else {
+          // Default to dark mode if no preference saved
+          localStorage.setItem('theme', 'dark');
+          themeToggle.checked = true;
         }
         
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('home-page').classList.add('active');
-        
-        window.uiManager.currentPage = 'home';
-        window.uiManager.updateHomePage();
-      } else {
-        document.getElementById('login-splash').classList.add('active');
-        document.getElementById('current-user-email').textContent = 'Not logged in';
-        window.taskManager.setCurrentUser(null);
-        window.uiManager.setCurrentUser(null);
+        themeToggle.addEventListener('change', () => {
+          const isDark = themeToggle.checked;
+          document.body.classList.toggle('light-mode', !isDark);
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          
+          // Also save to Firebase if user is logged in
+          const user = auth?.currentUser;
+          if (user) {
+            set(ref(database, `users/${user.uid}/theme`), isDark ? 'dark' : 'light');
+          }
+        });
       }
-    });
 
-    document.getElementById('save-settings').addEventListener('click', async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const username = document.getElementById('username').value || 'User';
-        const theme = document.getElementById('theme-toggle').checked ? 'dark' : 'light';
+      // Service Worker Registration
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/smart-task/sw.js")
+          .then(() => console.log("Service Worker Registered!"))
+          .catch(err => console.error("Service Worker Registration Failed:", err));
+      }
+
+      // Color picker functionality
+      const colorPicker = document.querySelector('.color-picker-input');
+      const colorPickerBtn = document.querySelector('.color-picker-btn');
+      
+      if (colorPicker && colorPickerBtn) {
+        // Set initial color
+        colorPickerBtn.style.setProperty('--current-color', colorPicker.value);
+      
+        // Update dot color when picker changes
+        colorPicker.addEventListener('input', (e) => {
+          colorPickerBtn.style.setProperty('--current-color', e.target.value);
+        });
+      
+        colorPicker.addEventListener('change', (e) => {
+          colorPickerBtn.style.setProperty('--current-color', e.target.value);
+        });
+      }
+
+      // Login/Register form toggles
+      document.getElementById('show-register')?.addEventListener('click', () => {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('register-form').classList.remove('hidden');
+        document.getElementById('login-error').classList.remove('active');
+        document.getElementById('register-error').classList.remove('active');
+      });
+
+      document.getElementById('show-login')?.addEventListener('click', () => {
+        document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+        document.getElementById('login-error').classList.remove('active');
+        document.getElementById('register-error').classList.remove('active');
+      });
+
+      function showError(formId, message) {
+        const errorElement = document.getElementById(`${formId}-error`);
+        errorElement.textContent = message;
+        errorElement.classList.add('active');
+        
+        setTimeout(() => {
+          errorElement.classList.remove('active');
+        }, 5000);
+      }
+
+      document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+
+        if (password !== confirmPassword) {
+          showError('register', 'Passwords do not match');
+          return;
+        }
+
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          document.getElementById('login-splash').classList.remove('active');
+        } catch (error) {
+          let errorMessage = '';
+          switch (error.code) {
+            case 'auth/email-already-in-use':
+              errorMessage = 'An account already exists with this email';
+              break;
+            case 'auth/invalid-email':
+              errorMessage = 'Please enter a valid email address';
+              break;
+            case 'auth/operation-not-allowed':
+              errorMessage = 'Account creation is currently disabled';
+              break;
+            case 'auth/weak-password':
+              errorMessage = 'Password should be at least 6 characters';
+              break;
+            default:
+              errorMessage = 'An error occurred during registration';
+          }
+          showError('register', errorMessage);
+        }
+      });
+
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
         
         try {
-          await set(ref(database, `users/${user.uid}`), {
-            username,
-            theme
-          });
-          
-          document.getElementById('welcome').textContent = `Welcome, ${username}`;
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          document.getElementById('login-splash').classList.remove('active');
         } catch (error) {
-          console.error('Error saving settings:', error);
+          showError('login', 'Credentials do not match our records');
         }
+      });
+
+      document.getElementById('logout-button').addEventListener('click', async () => {
+        try {
+          await signOut(auth);
+          document.getElementById('login-splash').classList.add('active');
+        } catch (error) {
+          console.error('Logout failed:', error);
+        }
+      });
+
+      auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          window.taskManager.setCurrentUser(user);
+          window.uiManager.setCurrentUser(user);
+          document.getElementById('login-splash').classList.remove('active');
+          document.getElementById('current-user-email').textContent = user.email;
+          
+          // Load user theme preference from Firebase
+          const userRef = ref(database, `users/${user.uid}`);
+          const snapshot = await get(userRef);
+          const userData = snapshot.val();
+          
+          if (userData?.theme) {
+            const isDark = userData.theme === 'dark';
+            document.body.classList.toggle('light-mode', !isDark);
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.checked = isDark;
+          }
+          
+          // Always navigate to home page after sign in
+          const homeLink = document.querySelector('[data-page="home"]');
+          if (homeLink) {
+            homeLink.classList.add('active');
+            document.querySelectorAll('.sidebar a').forEach(a => {
+              if (a !== homeLink) a.classList.remove('active');
+            });
+          }
+          
+          document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+          document.getElementById('home-page').classList.add('active');
+          
+          window.uiManager.currentPage = 'home';
+          window.uiManager.updateHomePage();
+        } else {
+          document.getElementById('login-splash').classList.add('active');
+          document.getElementById('current-user-email').textContent = 'Not logged in';
+          window.taskManager.setCurrentUser(null);
+          window.uiManager.setCurrentUser(null);
+        }
+      });
+
+      document.getElementById('save-settings').addEventListener('click', async () => {
+        const user = auth.currentUser;
+        if (user) {
+          const username = document.getElementById('username').value || 'User';
+          const theme = document.getElementById('theme-toggle').checked ? 'dark' : 'light';
+          
+          try {
+            await set(ref(database, `users/${user.uid}`), {
+              username,
+              theme
+            });
+            
+            document.getElementById('welcome').textContent = `Welcome, ${username}`;
+          } catch (error) {
+            console.error('Error saving settings:', error);
+          }
+        }
+      });
+
+      // Get and set version number when the page loads
+      const versionElement = document.getElementById('app-version');
+      if (versionElement) {
+        versionElement.textContent = getLatestVersion();
       }
     });
-
-    // Get and set version number when the page loads
-    const versionElement = document.getElementById('app-version');
-    if (versionElement) {
-      versionElement.textContent = getLatestVersion();
-    }
   </script>
 
   <div class="container">
@@ -679,39 +747,5 @@
     </div>
   </div>
 
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/smart-task/sw.js")
-        .then(() => console.log("Service Worker Registered!"))
-        .catch(err => console.error("Service Worker Registration Failed:", err));
-    }
-
-    const themeToggle = document.getElementById('theme-toggle');
-    if (localStorage.getItem('theme') === 'light') {
-      document.body.classList.add('light-mode');
-      themeToggle.checked = false;
-    }
-    
-    themeToggle.addEventListener('change', () => {
-      document.body.classList.toggle('light-mode', !themeToggle.checked);
-      localStorage.setItem('theme', themeToggle.checked ? 'dark' : 'light');
-    });
-  </script>
-  <script>
-    const colorPicker = document.querySelector('.color-picker-input');
-    const colorPickerBtn = document.querySelector('.color-picker-btn');
-  
-    // Set initial color
-    colorPickerBtn.style.setProperty('--current-color', colorPicker.value);
-  
-    // Update dot color when picker changes
-    colorPicker.addEventListener('input', (e) => {
-      colorPickerBtn.style.setProperty('--current-color', e.target.value);
-    });
-  
-    colorPicker.addEventListener('change', (e) => {
-      colorPickerBtn.style.setProperty('--current-color', e.target.value);
-    });
-  </script>
 </body>
 </html>
