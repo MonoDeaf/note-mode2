@@ -414,13 +414,20 @@ export class UIManager {
     const groupStats = document.getElementById('group-stats');
     if (groupStats) {
       if (loading) {
-        groupStats.innerHTML = `
-          <div class="loading-groups">
-            <div class="loading-spinner"></div>
-            <p>Loading your groups...</p>
-          </div>
+        // Insert loading indicator before all other group cards
+        const loadingGroups = document.createElement('div');
+        loadingGroups.className = 'loading-groups';
+        loadingGroups.innerHTML = `
+          <div class="loading-spinner"></div>
+          <p>Loading your groups...</p>
         `;
+        groupStats.prepend(loadingGroups);
       } else {
+        // Remove loading indicator if exists
+        const loadingGroups = groupStats.querySelector('.loading-groups');
+        if (loadingGroups) {
+          loadingGroups.remove();
+        }
         this.updateHomePage();
       }
     }
@@ -448,11 +455,9 @@ export class UIManager {
     groupStats.appendChild(addGroupCard);
 
     if (this.taskManager.groups && this.taskManager.groups.size > 0) {
-      // Convert groups to array and reverse sort by creation time (assuming group.id is a timestamp)
-      const groupsArray = Array.from(this.taskManager.groups.values())
-        .sort((a, b) => parseInt(b.id) - parseInt(a.id));
-
-      groupsArray.forEach(group => {
+      // Use the groupOrder array to determine display order
+      this.taskManager.groupOrder.forEach(groupId => {
+        const group = this.taskManager.groups.get(groupId);
         if (!group) return;
         
         const groupCard = document.createElement('div');
@@ -475,6 +480,9 @@ export class UIManager {
           }
         }
 
+        const canMoveLeft = this.taskManager.groupOrder.indexOf(group.id) > 0;
+        const canMoveRight = this.taskManager.groupOrder.indexOf(group.id) < this.taskManager.groupOrder.length - 1;
+
         groupCard.innerHTML += `
           <div class="dot-menu" style="color: ${textColor};">
             <svg viewBox="0 0 24 24" width="16" height="16">
@@ -489,6 +497,18 @@ export class UIManager {
                 <span class="iconify" data-icon="mdi:palette-outline"></span>
                 Change Background
               </button>
+              ${canMoveLeft ? `
+                <button class="move-left" data-group-id="${group.id}">
+                  <span class="iconify" data-icon="mdi:arrow-left"></span>
+                  Move Left
+                </button>
+              ` : ''}
+              ${canMoveRight ? `
+                <button class="move-right" data-group-id="${group.id}">
+                  <span class="iconify" data-icon="mdi:arrow-right"></span>
+                  Move Right
+                </button>
+              ` : ''}
               <button class="delete-group" data-group-id="${group.id}">
                 <span class="iconify" data-icon="mdi:delete-outline"></span>
                 Delete Group
@@ -538,6 +558,22 @@ export class UIManager {
     deleteBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.showDeleteConfirmation(group.id);
+    });
+
+    const moveLeftBtn = groupCard.querySelector('.move-left');
+    moveLeftBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.taskManager.moveGroup(group.id, 'left')) {
+        this.updateHomePage();
+      }
+    });
+
+    const moveRightBtn = groupCard.querySelector('.move-right');
+    moveRightBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.taskManager.moveGroup(group.id, 'right')) {
+        this.updateHomePage();
+      }
     });
   }
 
@@ -1234,14 +1270,91 @@ export class UIManager {
     textControls.forEach(btn => {
       const action = btn.dataset.action;
       const value = btn.dataset.value;
+      
       btn.onclick = () => {
         if (action === 'formatBlock') {
           document.execCommand(action, false, value);
         } else {
           document.execCommand(action, false, null);
         }
+        
+        // Check state and update active class
+        let isActive = false;
+        switch(action) {
+          case 'bold':
+            isActive = document.queryCommandState('bold');
+            break;
+          case 'italic':
+            isActive = document.queryCommandState('italic');
+            break;
+          case 'underline':
+            isActive = document.queryCommandState('underline');
+            break;
+          case 'insertUnorderedList':
+            isActive = document.queryCommandState('insertUnorderedList');
+            break;
+          case 'insertOrderedList':
+            isActive = document.queryCommandState('insertOrderedList');
+            break;
+          case 'formatBlock':
+            isActive = document.queryCommandValue('formatBlock').toLowerCase() === value.toLowerCase();
+            break;
+        }
+        
+        btn.classList.toggle('active', isActive);
         textarea.focus();
       };
+
+      // Listen for selection changes to update active states
+      textarea.addEventListener('mouseup', () => {
+        let isActive = false;
+        switch(action) {
+          case 'bold':
+            isActive = document.queryCommandState('bold');
+            break;
+          case 'italic':
+            isActive = document.queryCommandState('italic');
+            break;
+          case 'underline':
+            isActive = document.queryCommandState('underline');
+            break;
+          case 'insertUnorderedList':
+            isActive = document.queryCommandState('insertUnorderedList');
+            break;
+          case 'insertOrderedList':
+            isActive = document.queryCommandState('insertOrderedList');
+            break;
+          case 'formatBlock':
+            isActive = document.queryCommandValue('formatBlock').toLowerCase() === value.toLowerCase();
+            break;
+        }
+        btn.classList.toggle('active', isActive);
+      });
+
+      textarea.addEventListener('keyup', () => {
+        let isActive = false;
+        switch(action) {
+          case 'bold':
+            isActive = document.queryCommandState('bold');
+            break;
+          case 'italic':
+            isActive = document.queryCommandState('italic');
+            break;
+          case 'underline':
+            isActive = document.queryCommandState('underline');
+            break;
+          case 'insertUnorderedList':
+            isActive = document.queryCommandState('insertUnorderedList');
+            break;
+          case 'insertOrderedList':
+            isActive = document.queryCommandState('insertOrderedList');
+            break;
+          case 'formatBlock':
+            isActive = document.queryCommandValue('formatBlock').toLowerCase() === value.toLowerCase();
+            break;
+        }
+        btn.classList.toggle('active', isActive);
+      });
     });
 
     doneButton.onclick = () => {

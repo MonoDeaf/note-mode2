@@ -5,6 +5,7 @@ export class TaskManager {
     this.currentGroup = null;
     this.database = null;
     this.currentUser = null;
+    this.groupOrder = []; // Add this to track group order
   }
 
   setCurrentUser(user) {
@@ -27,8 +28,10 @@ export class TaskManager {
       const data = snapshot.val();
       
       this.groups.clear();
+      this.groupOrder = []; // Reset group order
       
       if (data && data.groups) {
+        // First load the groups
         Object.entries(data.groups).forEach(([groupId, group]) => {
           const notesMap = new Map();
           if (group.notes) {
@@ -48,10 +51,51 @@ export class TaskManager {
             notes: notesMap
           });
         });
+
+        // Then set the order - either from saved order or create default
+        if (data.groupOrder) {
+          this.groupOrder = data.groupOrder;
+        } else {
+          this.groupOrder = Array.from(this.groups.keys());
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
       throw error;
+    }
+  }
+
+  async saveData() {
+    if (!this.currentUser) return;
+
+    const userDataRef = window.ref(this.database, `users/${this.currentUser.uid}/data`);
+    const data = {
+      groups: Object.fromEntries(
+        Array.from(this.groups.entries()).map(([id, group]) => [
+          id,
+          {
+            id: group.id,
+            name: group.name,
+            background: group.background,
+            notes: Object.fromEntries(
+              Array.from(group.notes || new Map()).map(([noteId, note]) => [
+                noteId,
+                {
+                  ...note,
+                  createdAt: note.createdAt.toISOString()
+                }
+              ])
+            )
+          }
+        ])
+      ),
+      groupOrder: this.groupOrder // Save the group order
+    };
+
+    try {
+      await window.set(userDataRef, data);
+    } catch (error) {
+      console.error('Error saving user data:', error);
     }
   }
 
@@ -63,6 +107,7 @@ export class TaskManager {
       notes: new Map()
     };
     this.groups.set(group.id, group);
+    this.groupOrder.unshift(group.id); // Add new group to start of order
     this.saveData();
     return group;
   }
@@ -98,42 +143,27 @@ export class TaskManager {
     return null;
   }
 
-  async saveData() {
-    if (!this.currentUser) return;
-
-    const userDataRef = window.ref(this.database, `users/${this.currentUser.uid}/data`);
-    const data = {
-      groups: Object.fromEntries(
-        Array.from(this.groups.entries()).map(([id, group]) => [
-          id,
-          {
-            id: group.id,
-            name: group.name,
-            background: group.background,
-            notes: Object.fromEntries(
-              Array.from(group.notes || new Map()).map(([noteId, note]) => [
-                noteId,
-                {
-                  ...note,
-                  createdAt: note.createdAt.toISOString()
-                }
-              ])
-            )
-          }
-        ])
-      )
-    };
-
-    try {
-      await window.set(userDataRef, data);
-    } catch (error) {
-      console.error('Error saving user data:', error);
-    }
-  }
-
   deleteGroup(groupId) {
     this.groups.delete(groupId);
+    this.groupOrder = this.groupOrder.filter(id => id !== groupId);
     this.saveData();
+  }
+
+  moveGroup(groupId, direction) {
+    const currentIndex = this.groupOrder.indexOf(groupId);
+    if (currentIndex === -1) return false;
+
+    const newIndex = direction === 'left' 
+      ? Math.max(0, currentIndex - 1)
+      : Math.min(this.groupOrder.length - 1, currentIndex + 1);
+
+    if (currentIndex === newIndex) return false;
+
+    // Remove from current position and insert at new position
+    this.groupOrder.splice(currentIndex, 1);
+    this.groupOrder.splice(newIndex, 0, groupId);
+    this.saveData();
+    return true;
   }
 
   deleteNote(groupId, noteId) {
