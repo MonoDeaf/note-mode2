@@ -1217,12 +1217,12 @@ dialog[open] {
   opacity: 0;
   transition: opacity 0.2s ease;
   z-index: 50;
+  transform: rotate(90deg); /* Always rotate the dots 90 degrees */
 }
 
 .dot-menu svg {
   width: 20px;
   height: 20px;
-  transform: rotate(90deg); /* Always rotate the dots 90 degrees */
 }
 
 .group-card:hover .dot-menu {
