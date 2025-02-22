@@ -34,6 +34,12 @@ export class UIManager {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         const page = e.currentTarget.dataset.page;
+        
+        // Add check for groups page
+        if (page === 'groups' && !this.taskManager.currentGroup) {
+          return;
+        }
+        
         this.navigateTo(page);
       });
     });
@@ -46,6 +52,8 @@ export class UIManager {
         const group = this.taskManager.groups.get(groupId);
         if (group) {
           this.taskManager.currentGroup = group;
+          // Enable groups nav link when a group is selected
+          document.querySelector('[data-page="groups"]').classList.add('enabled');
           this.updateGroupPage(groupId);
           this.navigateTo('groups');
         }
@@ -382,6 +390,10 @@ export class UIManager {
   }
 
   navigateTo(page) {
+    if (page === 'groups' && !this.taskManager.currentGroup) {
+      return;
+    }
+
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(`${page}-page`).classList.add('active');
     
@@ -406,7 +418,7 @@ export class UIManager {
 
   getContrastColor(background) {
     if (!background) return '#ffffff'; 
-    return background.type === 'image' ? '#ffffff' : '#000000';
+    return background.type === 'color' ? '#000000' : '#ffffff';
   }
 
   setLoading(loading) {
@@ -857,22 +869,24 @@ export class UIManager {
 
     groupHeader.style.backgroundColor = 'var(--bg-secondary)';
     
-    if (group.background) {
-      if (group.background.type === 'image') {
-        groupHeader.style.backgroundImage = `url(${group.background.value})`;
-        groupHeader.style.backgroundSize = 'cover';
-        groupHeader.style.backgroundPosition = 'center';
-      } else {
-        groupHeader.style.backgroundColor = group.background.value;
-        groupHeader.style.backgroundImage = 'none';
-      }
-    }
-
     const groupTitle = document.getElementById('group-title');
     if (groupTitle) {
       groupTitle.textContent = group.name;
+      
+      if (group.background) {
+        if (group.background.type === 'image') {
+          groupHeader.style.backgroundImage = `url(${group.background.value})`;
+          groupHeader.style.backgroundSize = 'cover';
+          groupHeader.style.backgroundPosition = 'center';
+          groupTitle.style.color = '#ffffff'; // White text for image backgrounds
+        } else {
+          groupHeader.style.backgroundColor = group.background.value;
+          groupHeader.style.backgroundImage = 'none';
+          groupTitle.style.color = '#000000'; // Dark text for color backgrounds
+        }
+      }
     }
-  
+
     const tasksContainer = document.querySelector('.tasks-container');
     if (!tasksContainer) {
       console.warn('Tasks container element not found');
@@ -968,6 +982,9 @@ export class UIManager {
               <span class="task-title">${note.title}</span>
               <span class="task-date">${createdDate}</span>
             </div>
+            <button class="task-edit-btn" data-task-id="${note.id}" title="Edit note title">
+              <span class="iconify" data-icon="mdi:edit-box"></span>
+            </button>
             <button class="task-delete-btn" data-task-id="${note.id}" title="Delete note">
               <svg viewBox="0 0 24 24">
                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -976,20 +993,28 @@ export class UIManager {
           </div>
         `;
 
+        // Add click handler to show note editor
         taskElement.addEventListener('click', (e) => {
-          if (!e.target.closest('.task-delete-btn')) {
-            this.openNoteEditor(group.id, note.id, note.title, note.notes || '');
+          // Don't open editor if clicking edit title or delete buttons
+          if (!e.target.closest('.task-edit-btn') && !e.target.closest('.task-delete-btn')) {
+            const noteContent = this.taskManager.getNoteContent(groupId, note.id);
+            this.openNoteEditor(groupId, note.id, note.title, noteContent);
           }
         });
 
+        // Add event listener for edit button
+        const editBtn = taskElement.querySelector('.task-edit-btn');
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showEditTitleDialog(group.id, note.id, note.title);
+        });
+
         const deleteBtn = taskElement.querySelector('.task-delete-btn');
-        if (deleteBtn) {
-          deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.showDeleteTaskConfirmation(group.id, note.id);
-          });
-        }
-        
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showDeleteTaskConfirmation(group.id, note.id);
+        });
+
         incompleteTasks.appendChild(taskElement);
       });
     }
@@ -1090,6 +1115,9 @@ export class UIManager {
             ` : ''}
           </div>
           ${!searchText ? `
+            <button class="task-edit-btn" data-task-id="${note.id}" title="Edit note title">
+              <span class="iconify" data-icon="mdi:edit-box"></span>
+            </button>
             <button class="task-delete-btn" data-task-id="${note.id}" title="Delete note">
               <svg viewBox="0 0 24 24">
                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -1099,11 +1127,14 @@ export class UIManager {
         </div>
       `;
 
-      taskElement.addEventListener('click', (e) => {
-        if (!e.target.closest('.task-delete-btn')) {
-          this.openNoteEditor(group.id, note.id, note.title, note.notes || '');
-        }
-      });
+      // Add event listener for edit button
+      if (!searchText) {
+        const editBtn = taskElement.querySelector('.task-edit-btn');
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showEditTitleDialog(group.id, note.id, note.title);
+        });
+      }
 
       if (!searchText) {
         const deleteBtn = taskElement.querySelector('.task-delete-btn');
@@ -1215,57 +1246,37 @@ export class UIManager {
       { label: 'Huge Text', action: 'fontSize', value: '5', icon: 'mdi:format-size', shortcut: 'size' }
     ]);
 
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === '/') {
-        e.preventDefault();
-        currentRange = window.getSelection().getRangeAt(0);
-        const rect = currentRange.getBoundingClientRect();
+    textarea.addEventListener('input', () => {
+      textarea.scrollTop = textarea.scrollHeight;
+    });
+
+    textarea.addEventListener('keyup', (e) => {
+      textarea.scrollTop = textarea.scrollHeight;
+    });
+
+    const commandsList = commandPalette.querySelector('.command-list');
+    if (commandsList) {
+      commandsList.innerHTML = commands.map(cmd => {
+        let extraClass = '';
+        let previewHtml = '';
         
-        commandPalette.style.position = 'absolute';
-        commandPalette.style.left = `${rect.left}px`;
-        commandPalette.style.top = `${rect.bottom + 5}px`;
+        if (cmd.action === 'fontName') {
+          extraClass = 'font-family';
+          previewHtml = `<span class="preview" style="font-family: ${cmd.value}">${cmd.preview}</span>`;
+        }
         
-        commandPalette.classList.add('active');
-        const searchInput = commandPalette.querySelector('input');
-        searchInput.value = '';
-        searchInput.focus();
-        
-        updateCommandList(commands);
-      } else if (e.key === 'Escape' && commandPalette.classList.contains('active')) {
-        closeCommandPalette();
-      }
-    });
-
-    const searchInput = commandPalette.querySelector('input');
-    searchInput.addEventListener('click', (e) => {
-      e.stopPropagation(); 
-    });
-
-    commandPalette.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
-
-    const fontCommands = commands.filter(command => command.action === 'fontName');
-    const sizeCommands = commands.filter(command => command.action === 'fontSize');
-
-    const fontFamilySelect = editor.querySelector('.font-family-select');
-    const fontSizeSelect = editor.querySelector('.font-size-select');
-    const colorPicker = editor.querySelector('.color-picker-input');
-
-    fontFamilySelect.addEventListener('change', () => {
-      document.execCommand('fontName', false, fontFamilySelect.value);
-      textarea.focus();
-    });
-
-    fontSizeSelect.addEventListener('change', () => {
-      document.execCommand('fontSize', false, fontSizeSelect.value);
-      textarea.focus();
-    });
-
-    colorPicker.addEventListener('input', () => {
-      document.execCommand('foreColor', false, colorPicker.value);
-      textarea.focus();
-    });
+        return `
+          <div class="command-item ${extraClass}" data-action="${cmd.action}" data-value="${cmd.value || ''}">
+            <div class="icon">
+              <span class="iconify" data-icon="${cmd.icon}"></span>
+            </div>
+            <span class="label">${cmd.label}</span>
+            ${previewHtml}
+            <span class="shortcut">${cmd.shortcut}</span>
+          </div>
+        `;
+      }).join('');
+    }
 
     textControls.forEach(btn => {
       const action = btn.dataset.action;
@@ -1381,7 +1392,7 @@ export class UIManager {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
         if (commandPalette.classList.contains('active')) {
-          closeCommandPalette();
+          commandPalette.classList.remove('active');
         } else {
           editor.classList.remove('active');
           document.removeEventListener('keydown', handleEscape);
@@ -1429,11 +1440,6 @@ export class UIManager {
         document.execCommand(action, false, null);
       }
 
-      closeCommandPalette();
-      textarea.focus();
-    }
-
-    function closeCommandPalette() {
       commandPalette.classList.remove('active');
       const commandSearchInput = commandPalette.querySelector('input');
       commandSearchInput.value = '';
@@ -2049,5 +2055,48 @@ export class UIManager {
         this.setLoading(false);
       }
     }
+  }
+
+  showEditTitleDialog(groupId, noteId, currentTitle) {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'confirmation-dialog';
+    dialog.innerHTML = `
+      <h3>Edit Note Title</h3>
+      <div class="form-group">
+        <input type="text" id="new-note-title" value="${currentTitle}" placeholder="Enter new title">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn secondary" id="cancel-edit">Cancel</button>
+        <button class="btn" id="confirm-edit">Save</button>
+      </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    const input = dialog.querySelector('#new-note-title');
+    input.select();
+
+    dialog.querySelector('#cancel-edit').addEventListener('click', () => {
+      dialog.close();
+      dialog.remove();
+    });
+
+    dialog.querySelector('#confirm-edit').addEventListener('click', () => {
+      const newTitle = input.value.trim();
+      if (newTitle) {
+        const group = this.taskManager.groups.get(groupId);
+        if (group) {
+          const note = group.notes.get(noteId);
+          if (note) {
+            note.title = newTitle;
+            this.taskManager.saveData();
+            this.updateGroupPage(groupId);
+          }
+        }
+      }
+      dialog.close();
+      dialog.remove();
+    });
   }
 }

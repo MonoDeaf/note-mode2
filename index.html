@@ -379,7 +379,23 @@
                 <button id="add-task" class="btn">Add Note</button>
               </div>
             </div>
-            <div id="incomplete-tasks"></div>
+            <div id="incomplete-tasks">
+              <!-- Tasks will be rendered here -->
+              <div class="task-row">
+                <div class="task-info">
+                  <span class="task-title">${taskElement.title}</span>
+                  <span class="task-date">${createdDate}</span>
+                </div>
+                <button class="task-edit-btn" data-task-id="${note.id}" title="Edit note title">
+                  <span class="iconify" data-icon="mdi:edit-box"></span>
+                </button>
+                <button class="task-delete-btn" data-task-id="${note.id}" title="Delete note">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

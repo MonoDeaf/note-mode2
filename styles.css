@@ -78,7 +78,6 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
-  overscroll-behavior: contain;
 }
 
 .container {
@@ -179,6 +178,23 @@ body {
 .sidebar a.active {
   background-color: rgba(55, 55, 55, 0.1);
   color: var(--text-primary);
+}
+
+.sidebar a[data-page="groups"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar a[data-page="groups"].enabled {
+  opacity: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.sidebar a[data-page="groups"].enabled::after {
+  display: none;
 }
 
 main {
@@ -640,8 +656,8 @@ body.light-mode .add-group-card h3 {
   align-items: center;
   width: 100%;
   padding: 0.75rem 1.5rem;
-  gap: 1rem;
-  border-bottom: 1px solid var(--border-color); /* Move border to bottom */
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border-color); 
 }
 
 .tasks-list h3 {
@@ -1169,6 +1185,7 @@ dialog[open] {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  max-width: 40rem;
 }
 
 .group-card {
@@ -1479,10 +1496,6 @@ body.light-mode .menu-toggle img {
   background: var(--bg-primary);
 }
 
-body.light-mode .menu-toggle:hover {
-  background: var(--bg-secondary);
-}
-
 @media (max-width: 768px) {
   .menu-toggle {
     display: block;
@@ -1641,6 +1654,25 @@ a {
   margin-top: auto; /* Push to bottom of task item */
 }
 
+.task-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.task-edit-btn:hover {
+  opacity: 1;
+}
+
 .task-delete-btn {
   background: none;
   border: none;
@@ -1658,6 +1690,12 @@ a {
 
 .task-delete-btn:hover {
   opacity: 1;
+}
+
+.task-delete-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor; /* This ensures the SVG inherits the red color */
 }
 
 /* Task View Dialog Styles */
@@ -2201,14 +2239,39 @@ a {
   background-color: rgba(var(--text-rgb), 0.05);
 }
 
+.task-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.task-edit-btn:hover {
+  opacity: 1;
+}
+
+.task-edit-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
 .task-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
   width: 100%;
   padding: 0.75rem 1.5rem;
-  gap: 1rem;
-  border-bottom: 1px solid var(--border-color); /* Move border to bottom */
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .task-info {
@@ -2221,47 +2284,9 @@ a {
 @media (min-width: 768px) {
   .task-info {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
   }
-}
-
-.task-title {
-  font-size: 1rem;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 1.4;
-}
-
-.task-date {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  text-align: right;
-}
-
-.task-delete-btn {
-  background: none;
-  border: none;
-  color: var(--danger);
-  cursor: pointer;
-  flex-shrink: 0;
-  padding: 8px;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-  justify-self: end;
-}
-
-.task-delete-btn:hover {
-  opacity: 1;
-}
-
-.task-delete-btn svg {
-  width: 18px;
-  height: 18px;
-  fill: currentColor;
 }
 
 .note-editor {
@@ -2326,7 +2351,6 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
   width: 32px;  
   height: 32px;  
   position: relative;
@@ -3065,5 +3089,56 @@ body.light-mode .form-group input[type="text"]:focus {
     width: calc(100% - 2rem);
     left: 1rem !important;
     max-height: 300px;
+  }
+}
+
+.task-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);  
+  opacity: 0.6; 
+  white-space: nowrap;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .task-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+  }
+
+  .task-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    flex-direction: row !important; /* Force row direction */
+    gap: 0.5rem;
+  }
+
+  .task-title {
+    font-size: 0.95rem;
+    flex: 1;
+  }
+
+  .task-date {
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .task-edit-btn,
+  .task-delete-btn {
+    padding: 0.4rem;
+    width: 28px;
+    height: 28px;
+  }
+
+  .task-edit-btn svg,
+  .task-delete-btn svg {
+    width: 16px;
+    height: 16px;
   }
 }
