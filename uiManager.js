@@ -1027,124 +1027,126 @@ export class UIManager {
     incompleteTasks.innerHTML = '';
 
     if (!group.notes || group.notes.size === 0) {
-      incompleteTasks.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: left; padding: 3rem; color: var(--text-secondary);">
-          <svg viewBox="0 0 24 24" width="48" height="48" style="margin-bottom: 0rem; opacity: 0.5;">
-            <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
-          <h3 style="margin-bottom: 0.5rem; color: var(--text-secondary);">No notes yet</h3>
-          <p style="margin: 0; opacity: 0.7;">Click the "Add Note" button to create your first note</p>
-        </div>
-      `;
-      return;
+        incompleteTasks.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: left; padding: 3rem; color: var(--text-secondary);">
+                <svg viewBox="0 0 24 24" width="48" height="48" style="margin-bottom: 0rem; opacity: 0.5;">
+                    <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                </svg>
+                <h3 style="margin-bottom: 0.5rem; color: var(--text-secondary);">No notes yet</h3>
+                <p style="margin: 0; opacity: 0.7;">Click the "Add Note" button to create your first note</p>
+            </div>
+        `;
+        return;
     }
 
     const notesArray = Array.from(group.notes.values())
-      .filter(note => {
-        const titleMatch = note.title.toLowerCase().includes(searchText);
-        const notesMatch = (note.notes || '').toLowerCase().includes(searchText);
-        return titleMatch || notesMatch;
-      })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        .filter(note => {
+            const titleMatch = note.title.toLowerCase().includes(searchText);
+            const notesMatch = (note.notes || '').toLowerCase().includes(searchText);
+            return titleMatch || notesMatch;
+        })
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     if (notesArray.length === 0) {
-      incompleteTasks.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: left; padding: 3rem; color: var(--text-secondary);">
-          <svg viewBox="0 0 24 24" width="48" height="48" style="margin-bottom: 1rem; opacity: 0.5;">
-            <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-          </svg>
-          <h3 style="margin-bottom: 0.5rem; color: var(--text-secondary);">No matching notes found</h3>
-          <p style="margin: 0; opacity: 0.7;">Try a different search term</p>
-        </div>
-      `;
-      return;
+        incompleteTasks.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: left; padding: 3rem; color: var(--text-secondary);">
+                <svg viewBox="0 0 24 24" width="48" height="48" style="margin-bottom: 1rem; opacity: 0.5;">
+                    <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                <h3 style="margin-bottom: 0.5rem; color: var(--text-secondary);">No matching notes found</h3>
+                <p style="margin: 0; opacity: 0.7;">Try a different search term</p>
+            </div>
+        `;
+        return;
     }
     
     notesArray.forEach(note => {
-      const taskElement = document.createElement('div');
-      taskElement.className = 'task-item';
-      
-      let displayTitle = note.title;
-      let matchInfo = '';
-      
-      if (searchText) {
-        if (note.title.toLowerCase().includes(searchText)) {
-          displayTitle = note.title.replace(new RegExp(searchText, 'gi'), match => 
-            `<span style="background-color: rgba(var(--text-rgb), 0.2);">${match}</span>`
-          );
+        const taskElement = document.createElement('div');
+        taskElement.className = 'task-item';
+        
+        let displayTitle = note.title;
+        let matchInfo = '';
+        
+        if (searchText) {
+            if (note.title.toLowerCase().includes(searchText)) {
+                displayTitle = note.title.replace(new RegExp(searchText, 'gi'), match => 
+                    `<span style="background-color: rgba(var(--text-rgb), 0.2);">${match}</span>`
+                );
+            }
+            
+            if (note.notes && note.notes.toLowerCase().includes(searchText)) {
+                const noteText = note.notes.toString();
+                const searchIndex = noteText.toLowerCase().indexOf(searchText.toLowerCase());
+                const start = Math.max(0, searchIndex - 30);
+                const end = Math.min(noteText.length, searchIndex + 30);
+                let excerpt = noteText.substring(start, end);
+                
+                if (start > 0) excerpt = '...' + excerpt;
+                if (end < noteText.length) excerpt = excerpt + '...';
+                
+                excerpt = excerpt.replace(new RegExp(searchText, 'gi'), match => 
+                    `<span style="background-color: rgba(var(--text-rgb), 0.2);">${match}</span>`
+                );
+                
+                matchInfo = `
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; 
+                              font-style: italic; opacity: 0.8;">
+                        Match found in note: ${excerpt}
+                    </div>
+                `;
+            }
         }
         
-        if (note.notes && note.notes.toLowerCase().includes(searchText)) {
-          const noteText = note.notes.toString();
-          const searchIndex = noteText.toLowerCase().indexOf(searchText.toLowerCase());
-          const start = Math.max(0, searchIndex - 30);
-          const end = Math.min(noteText.length, searchIndex + 30);
-          let excerpt = noteText.substring(start, end);
-          
-          if (start > 0) excerpt = '...' + excerpt;
-          if (end < noteText.length) excerpt = excerpt + '...';
-          
-          excerpt = excerpt.replace(new RegExp(searchText, 'gi'), match => 
-            `<span style="background-color: rgba(var(--text-rgb), 0.2);">${match}</span>`
-          );
-          
-          matchInfo = `
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; 
-                      font-style: italic; opacity: 0.8;">
-              Match found in note: ${excerpt}
+        taskElement.innerHTML = `
+            <div class="task-row">
+                <div class="task-info" style="width: 100%;">
+                    <div style="display: flex; flex-direction: column;">
+                        <span class="task-title">${displayTitle}</span>
+                        ${matchInfo}
+                    </div>
+                    <span class="task-date">${new Date(note.createdAt).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</span>
+                </div>
+                <button class="task-edit-btn" data-task-id="${note.id}" title="Edit note title">
+                    <span class="iconify" data-icon="mdi:edit-box"></span>
+                </button>
+                <button class="task-delete-btn" data-task-id="${note.id}" title="Delete note">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                </button>
             </div>
-          `;
-        }
-      }
-      
-      taskElement.innerHTML = `
-        <div class="task-row">
-          <div class="task-info" style="width: 100%;">
-            <div style="display: flex; flex-direction: column;">
-              <span class="task-title">${displayTitle}</span>
-              ${matchInfo}
-            </div>
-            ${!searchText ? `
-              <span class="task-date">${new Date(note.createdAt).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}</span>
-            ` : ''}
-          </div>
-          ${!searchText ? `
-            <button class="task-edit-btn" data-task-id="${note.id}" title="Edit note title">
-              <span class="iconify" data-icon="mdi:edit-box"></span>
-            </button>
-            <button class="task-delete-btn" data-task-id="${note.id}" title="Delete note">
-              <svg viewBox="0 0 24 24">
-                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-              </svg>
-            </button>
-          ` : ''}
-        </div>
-      `;
+        `;
 
-      // Add event listener for edit button
-      if (!searchText) {
+        // Add note click handler
+        taskElement.addEventListener('click', (e) => {
+            // Don't open editor if clicking edit title or delete buttons
+            if (!e.target.closest('.task-edit-btn') && !e.target.closest('.task-delete-btn')) {
+                const noteContent = this.taskManager.getNoteContent(group.id, note.id);
+                this.openNoteEditor(group.id, note.id, note.title, noteContent);
+            }
+        });
+
+        // Add edit button handler
         const editBtn = taskElement.querySelector('.task-edit-btn');
         editBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.showEditTitleDialog(group.id, note.id, note.title);
+            e.stopPropagation();
+            this.showEditTitleDialog(group.id, note.id, note.title);
         });
-      }
 
-      if (!searchText) {
+        // Add delete button handler
         const deleteBtn = taskElement.querySelector('.task-delete-btn');
         deleteBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.showDeleteTaskConfirmation(group.id, note.id);
+            e.stopPropagation();
+            this.showDeleteTaskConfirmation(group.id, note.id);
         });
-      }
 
-      incompleteTasks.appendChild(taskElement);
+        incompleteTasks.appendChild(taskElement);
     });
   }
 

@@ -194,7 +194,7 @@ body {
 }
 
 .sidebar a[data-page="groups"].enabled::after {
-  display: none;
+  display: block; /* Show tooltip even when enabled */
 }
 
 main {
