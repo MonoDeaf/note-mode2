@@ -244,14 +244,14 @@ h2 {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+.group-grid::-webkit-scrollbar {
+  display: none;
+}
+
 .page:not(#home-page).active ~ .group-grid {
   opacity: 0;
   transform: translateY(20px);
   pointer-events: none;
-}
-
-.group-grid::-webkit-scrollbar {
-  display: none; 
 }
 
 .group-header,
@@ -1610,7 +1610,8 @@ body.light-mode .menu-toggle img {
   #settings-page h2,
   #graphs-page h2,
   #updates-page h2,
-  #tools-page h2 {
+  #tools-page h2,
+  #help-page h2 { 
     margin-top: 3.5rem;
   }
 }
@@ -3140,5 +3141,150 @@ body.light-mode .form-group input[type="text"]:focus {
   .task-delete-btn svg {
     width: 16px;
     height: 16px;
+  }
+}
+
+.help-container {
+  max-width: 800px;
+  margin: 0 auto;
+  margin-left: 0; /* Keep help content aligned left like updates */
+  padding-right: 2rem;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.help-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.3s ease forwards;
+  animation-delay: 0.1s;
+}
+
+.help-section h3 {
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  font-size: 1.2rem;
+}
+
+.shortcut-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 150px;
+}
+
+kbd {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.shortcut-description {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.how-to-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.how-to-item {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+}
+
+.how-to-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.step-number {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  border: 1px solid var(--border-color);
+}
+
+.how-to-item p {
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .help-container {
+    padding: 1rem;
+  }
+  
+  .help-section {
+    padding: 1.5rem;
+  }
+  
+  .shortcut-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .shortcut-keys {
+    min-width: unset;
+  }
+}
+
+.group-grid {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.group-grid::-webkit-scrollbar {
+  display: none;
+}
+
+@media (hover: hover) {
+  .group-grid {
+    scroll-behavior: smooth;
+  }
+  
+  .group-grid.shift-scroll {
+    scroll-behavior: auto;
   }
 }

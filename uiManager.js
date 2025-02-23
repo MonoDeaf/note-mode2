@@ -14,6 +14,7 @@ export class UIManager {
     this.loadUserSettings();
     this.setupMobileMenu();
     this.setupThemeToggle();
+    this.setupHorizontalScroll();
   }
 
   async initializeUI() {
@@ -413,6 +414,8 @@ export class UIManager {
       this.updateGraphsPage();
     } else if (page === 'updates') {
       this.updateUpdatesPage();
+    } else if (page === 'help') {
+      this.updateHelpPage();
     }
   }
 
@@ -2099,6 +2102,56 @@ export class UIManager {
       }
       dialog.close();
       dialog.remove();
+    });
+  }
+
+  setupHorizontalScroll() {
+    const groupGrid = document.querySelector('.group-grid');
+    if (!groupGrid) return;
+
+    window.addEventListener('wheel', (e) => {
+      if (e.shiftKey) {
+        e.preventDefault();
+        groupGrid.classList.add('shift-scroll');
+        groupGrid.scrollLeft += e.deltaY;
+        
+        // Remove the class after scrolling stops
+        clearTimeout(this.scrollTimeout);
+        this.scrollTimeout = setTimeout(() => {
+          groupGrid.classList.remove('shift-scroll');
+        }, 150);
+      }
+    }, { passive: false });
+  }
+
+  updateHelpPage() {
+    import('./help.js').then(({ shortcuts, howToUse }) => {
+      const shortcutGrid = document.querySelector('#help-page .shortcut-grid');
+      if (shortcutGrid) {
+        shortcutGrid.innerHTML = shortcuts.map(shortcut => `
+          <div class="shortcut-item">
+            <div class="shortcut-keys">
+              ${shortcut.keys.map(key => `<kbd>${key}</kbd>`).join(' + ')}
+            </div>
+            <div class="shortcut-description">
+              ${shortcut.description}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const howToGrid = document.querySelector('#help-page .how-to-grid');
+      if (howToGrid) {
+        howToGrid.innerHTML = howToUse.map(item => `
+          <div class="how-to-item">
+            <div class="how-to-title">
+              <span class="step-number">${item.step}</span>
+              ${item.title}
+            </div>
+            <p>${item.description}</p>
+          </div>
+        `).join('');
+      }
     });
   }
 }
