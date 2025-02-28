@@ -174,13 +174,14 @@ export class TaskManager {
     }
   }
 
-  saveNoteContent(groupId, noteId, content) {
+  async saveNoteContent(groupId, noteId, content) {
     const group = this.groups.get(groupId);
     if (group && group.notes) {
       const note = group.notes.get(noteId);
       if (note) {
         note.notes = content;
-        this.saveData();
+        // Save to local storage and Firebase
+        await this.saveData();
       }
     }
   }

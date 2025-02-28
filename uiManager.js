@@ -1158,314 +1158,83 @@ export class UIManager {
     const headerTitle = editor.querySelector('h3');
     const textarea = editor.querySelector('.note-textarea');
     const doneButton = editor.querySelector('.done-button');
-    const textControls = editor.querySelectorAll('.text-control-btn');
-    const commandPalette = document.querySelector('.command-palette');
+    const closeButton = editor.querySelector('.close-note-editor');
+    const controlsRow = editor.querySelector('.controls-row');
     
+    // Remove existing autosave indicator if it exists
+    const existingIndicator = controlsRow.querySelector('.autosave-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+    
+    // Remove the done button since we're using autosave
+    if (doneButton) {
+        doneButton.remove();
+    }
+    
+    // Add autosave indicator
+    const autosaveIndicator = document.createElement('div');
+    autosaveIndicator.className = 'autosave-indicator';
+    autosaveIndicator.innerHTML = `
+      <span class="iconify" data-icon="mdi:autorenew"></span>
+    `;
+    controlsRow.appendChild(autosaveIndicator);
+
     headerTitle.textContent = title;
     textarea.innerHTML = content;
     editor.classList.add('active');
     
-    // Store the current note info
     editor.dataset.groupId = groupId;
     editor.dataset.noteId = taskId;
 
-    let currentRange = null;
+    // Remove any existing close button listener
+    const newCloseButton = closeButton.cloneNode(true);
+    closeButton.parentNode.replaceChild(newCloseButton, closeButton);
 
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.command-palette') && 
-          !e.target.closest('.note-textarea') && 
-          commandPalette.classList.contains('active')) {
-        commandPalette.classList.remove('active');
-        const commandSearchInput = commandPalette.querySelector('input');
-        if (commandSearchInput) {
-          commandSearchInput.value = '';
-        }
-      }
-    });
-
-    const commands = [
-      { label: 'Heading 1', action: 'formatBlock', value: 'h1', icon: 'mdi:format-header-1', shortcut: 'h1' },
-      { label: 'Heading 2', action: 'formatBlock', value: 'h2', icon: 'mdi:format-header-2', shortcut: 'h2' },
-      { label: 'Heading 3', action: 'formatBlock', value: 'h3', icon: 'mdi:format-header-3', shortcut: 'h3' },
-      { label: 'Bold Text', action: 'bold', icon: 'mdi:format-bold', shortcut: 'bold' },
-      { label: 'Italic Text', action: 'italic', icon: 'mdi:format-italic', shortcut: 'italic' },
-      { label: 'Underline Text', action: 'underline', icon: 'mdi:format-underline', shortcut: 'underline' },
-      { label: 'Bullet List', action: 'insertUnorderedList', icon: 'mdi:format-list-bulleted', shortcut: 'list' },
-      { label: 'Numbered List', action: 'insertOrderedList', icon: 'mdi:format-list-numbered', shortcut: 'numbered' }
-    ];
-
-    commands.push(...[
-      { 
-        label: 'Arimo Font', 
-        action: 'fontName', 
-        value: 'Arimo',
-        icon: 'mdi:format-font',
-        shortcut: 'font',
-        preview: 'Aa'
-      },
-      { 
-        label: 'Roboto Font', 
-        action: 'fontName', 
-        value: 'Roboto',
-        icon: 'mdi:format-font',
-        shortcut: 'font',
-        preview: 'Aa'
-      },
-      { 
-        label: 'Open Sans Font', 
-        action: 'fontName', 
-        value: 'Open Sans',
-        icon: 'mdi:format-font',
-        shortcut: 'font',
-        preview: 'Aa'
-      },
-      { 
-        label: 'Lato Font', 
-        action: 'fontName', 
-        value: 'Lato',
-        icon: 'mdi:format-font',
-        shortcut: 'font',
-        preview: 'Aa'
-      },
-      { 
-        label: 'Poppins Font', 
-        action: 'fontName', 
-        value: 'Poppins',
-        icon: 'mdi:format-font',
-        shortcut: 'font',
-        preview: 'Aa'
-      },
-      { 
-        label: 'Montserrat Font', 
-        action: 'fontName', 
-        value: 'Montserrat',
-        icon: 'mdi:format-font',
-        shortcut: 'font',
-        preview: 'Aa'
-      }
-    ], [
-      { label: 'Small Text', action: 'fontSize', value: '1', icon: 'mdi:format-size', shortcut: 'size' },
-      { label: 'Medium Text', action: 'fontSize', value: '2', icon: 'mdi:format-size', shortcut: 'size' },
-      { label: 'Large Text', action: 'fontSize', value: '3', icon: 'mdi:format-size', shortcut: 'size' },
-      { label: 'Extra Large Text', action: 'fontSize', value: '4', icon: 'mdi:format-size', shortcut: 'size' },
-      { label: 'Huge Text', action: 'fontSize', value: '5', icon: 'mdi:format-size', shortcut: 'size' }
-    ]);
-
-    textarea.addEventListener('input', () => {
-      textarea.scrollTop = textarea.scrollHeight;
-    });
-
-    textarea.addEventListener('keyup', (e) => {
-      textarea.scrollTop = textarea.scrollHeight;
-    });
-
-    const commandsList = commandPalette.querySelector('.command-list');
-    if (commandsList) {
-      commandsList.innerHTML = commands.map(cmd => {
-        let extraClass = '';
-        let previewHtml = '';
-        
-        if (cmd.action === 'fontName') {
-          extraClass = 'font-family';
-          previewHtml = `<span class="preview" style="font-family: ${cmd.value}">${cmd.preview}</span>`;
-        }
-        
-        return `
-          <div class="command-item ${extraClass}" data-action="${cmd.action}" data-value="${cmd.value || ''}">
-            <div class="icon">
-              <span class="iconify" data-icon="${cmd.icon}"></span>
-            </div>
-            <span class="label">${cmd.label}</span>
-            ${previewHtml}
-            <span class="shortcut">${cmd.shortcut}</span>
-          </div>
-        `;
-      }).join('');
-    }
-
-    textControls.forEach(btn => {
-      const action = btn.dataset.action;
-      const value = btn.dataset.value;
-      
-      btn.onclick = () => {
-        if (action === 'formatBlock') {
-          document.execCommand(action, false, value);
-        } else {
-          document.execCommand(action, false, null);
-        }
-        
-        // Check state and update active class
-        let isActive = false;
-        switch(action) {
-          case 'bold':
-            isActive = document.queryCommandState('bold');
-            break;
-          case 'italic':
-            isActive = document.queryCommandState('italic');
-            break;
-          case 'underline':
-            isActive = document.queryCommandState('underline');
-            break;
-          case 'insertUnorderedList':
-            isActive = document.queryCommandState('insertUnorderedList');
-            break;
-          case 'insertOrderedList':
-            isActive = document.queryCommandState('insertOrderedList');
-            break;
-          case 'formatBlock':
-            isActive = document.queryCommandValue('formatBlock').toLowerCase() === value.toLowerCase();
-            break;
-        }
-        
-        btn.classList.toggle('active', isActive);
-        textarea.focus();
-      };
-
-      // Listen for selection changes to update active states
-      textarea.addEventListener('mouseup', () => {
-        let isActive = false;
-        switch(action) {
-          case 'bold':
-            isActive = document.queryCommandState('bold');
-            break;
-          case 'italic':
-            isActive = document.queryCommandState('italic');
-            break;
-          case 'underline':
-            isActive = document.queryCommandState('underline');
-            break;
-          case 'insertUnorderedList':
-            isActive = document.queryCommandState('insertUnorderedList');
-            break;
-          case 'insertOrderedList':
-            isActive = document.queryCommandState('insertOrderedList');
-            break;
-          case 'formatBlock':
-            isActive = document.queryCommandValue('formatBlock').toLowerCase() === value.toLowerCase();
-            break;
-        }
-        btn.classList.toggle('active', isActive);
-      });
-
-      textarea.addEventListener('keyup', () => {
-        let isActive = false;
-        switch(action) {
-          case 'bold':
-            isActive = document.queryCommandState('bold');
-            break;
-          case 'italic':
-            isActive = document.queryCommandState('italic');
-            break;
-          case 'underline':
-            isActive = document.queryCommandState('underline');
-            break;
-          case 'insertUnorderedList':
-            isActive = document.queryCommandState('insertUnorderedList');
-            break;
-          case 'insertOrderedList':
-            isActive = document.queryCommandState('insertOrderedList');
-            break;
-          case 'formatBlock':
-            isActive = document.queryCommandValue('formatBlock').toLowerCase() === value.toLowerCase();
-            break;
-        }
-        btn.classList.toggle('active', isActive);
-      });
-    });
-
-    doneButton.onclick = () => {
-      const currentGroupId = editor.dataset.groupId;
-      const currentNoteId = editor.dataset.noteId;
-      if (currentGroupId && currentNoteId) {
-        this.taskManager.saveNoteContent(currentGroupId, currentNoteId, textarea.innerHTML);
+    // Add close button handler
+    newCloseButton.addEventListener('click', () => {
         editor.classList.remove('active');
-        this.updateGroupPage(currentGroupId); // Refresh the group page
-      }
-    };
-
-    const handleClickOutside = (e) => {
-      if (!editor.contains(e.target) && !commandPalette.contains(e.target)) {
-        editor.classList.remove('active');
-        document.removeEventListener('mousedown', handleClickOutside);
-      }
-    };
-
-    setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
-
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        if (commandPalette.classList.contains('active')) {
-          commandPalette.classList.remove('active');
-        } else {
-          editor.classList.remove('active');
-          document.removeEventListener('keydown', handleEscape);
-        }
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
-
-    function updateCommandList(items) {
-      const commandList = commandPalette.querySelector('.command-list');
-      commandList.innerHTML = items.map(cmd => {
-        let extraClass = '';
-        let previewHtml = '';
-        
-        if (cmd.action === 'fontName') {
-          extraClass = 'font-family';
-          previewHtml = `<span class="preview" style="font-family: ${cmd.value}">${cmd.preview}</span>`;
-        }
-        
-        return `
-          <div class="command-item ${extraClass}" data-action="${cmd.action}" data-value="${cmd.value || ''}">
-            <div class="icon">
-              <span class="iconify" data-icon="${cmd.icon}"></span>
-            </div>
-            <span class="label">${cmd.label}</span>
-            ${previewHtml}
-            <span class="shortcut">${cmd.shortcut}</span>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function executeCommand(action, value) {
-      if (currentRange) {
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(currentRange);
-      }
-
-      if (action === 'fontName' || action === 'fontSize' || action === 'foreColor') {
-        document.execCommand(action, false, value);
-      } else if (value) {
-        document.execCommand(action, false, value);
-      } else {
-        document.execCommand(action, false, null);
-      }
-
-      commandPalette.classList.remove('active');
-      const commandSearchInput = commandPalette.querySelector('input');
-      commandSearchInput.value = '';
-    }
-
-    const commandSearchInput = commandPalette.querySelector('input');
-    commandSearchInput.addEventListener('input', () => {
-      const query = commandSearchInput.value.toLowerCase();
-      const filteredCommands = commands.filter(cmd => 
-        cmd.label.toLowerCase().includes(query) || 
-        cmd.shortcut.toLowerCase().includes(query)
-      );
-      updateCommandList(filteredCommands);
+        editor.dataset.groupId = '';
+        editor.dataset.noteId = '';
+        textarea.innerHTML = '';
     });
 
-    commandPalette.querySelector('.command-list').addEventListener('click', (e) => {
-      const commandItem = e.target.closest('.command-item');
-      if (commandItem) {
-        e.stopPropagation(); 
-        executeCommand(commandItem.dataset.action, commandItem.dataset.value);
-      }
+    // Remove any existing input listener
+    const newTextarea = textarea.cloneNode(true);
+    textarea.parentNode.replaceChild(newTextarea, textarea);
+    
+    let saveTimeout;
+    
+    // Handle autosave
+    const handleAutosave = async () => {
+        const currentGroupId = editor.dataset.groupId;
+        const currentNoteId = editor.dataset.noteId;
+        
+        if (currentGroupId && currentNoteId) {
+            autosaveIndicator.classList.add('active');
+            
+            try {
+                await this.taskManager.saveNoteContent(currentGroupId, currentNoteId, newTextarea.innerHTML);
+                
+                // Show brief indicator
+                setTimeout(() => {
+                    autosaveIndicator.classList.remove('active');
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Autosave failed:', error);
+                autosaveIndicator.classList.add('error');
+                
+                setTimeout(() => {
+                    autosaveIndicator.classList.remove('active', 'error');
+                }, 2000);
+            }
+        }
+    };
+
+    newTextarea.addEventListener('input', () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(handleAutosave, 1000);
     });
   }
 
