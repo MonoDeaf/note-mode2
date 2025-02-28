@@ -176,6 +176,21 @@
         });
       }
 
+      const bgColorPicker = document.querySelector('.bg-color-picker-input');
+      const bgColorPickerBtn = document.querySelector('.bg-color-picker-btn');
+
+      if (bgColorPicker && bgColorPickerBtn) {
+        bgColorPickerBtn.style.setProperty('--current-bg-color', bgColorPicker.value);
+        
+        bgColorPicker.addEventListener('input', (e) => {
+          bgColorPickerBtn.style.setProperty('--current-bg-color', e.target.value);
+        });
+        
+        bgColorPicker.addEventListener('change', (e) => {
+          bgColorPickerBtn.style.setProperty('--current-bg-color', e.target.value);
+        });
+      }
+
       // Login/Register form toggles
       document.getElementById('show-register')?.addEventListener('click', () => {
         document.getElementById('login-form').classList.add('hidden');
@@ -331,14 +346,12 @@
     <nav class="sidebar">
       <ul class="top-menu">
         <li><a href="#" class="active" data-page="home" data-tooltip="Home">
-          <svg viewBox="0 0 24 24" width="24" height="24">
+          <svg viewBox="0 0 24 24" width="28" height="28">
             <path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
           </svg>
         </a></li>
         <li><a href="#" data-page="groups" data-tooltip="Groups">
-          <svg viewBox="0 0 24 24" width="24" height="24">
-            <path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-          </svg>
+          <span class="iconify" data-icon="material-symbols:note-stack" width="28" height="28"></span>
         </a></li>
         <li><a href="#" data-page="graphs" data-tooltip="Analytics">
           <span class="iconify" data-icon="mdi:graph-box" width="28" height="28"></span>
@@ -352,12 +365,12 @@
       </ul>
       <ul class="bottom-menu">
         <li><a href="#" data-page="help" data-tooltip="Help">
-          <svg viewBox="0 0 24 24" width="24" height="24">
+          <svg viewBox="0 0 24 24" width="28" height="28">
             <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
           </svg>
         </a></li>
         <li><a href="#" data-page="settings" data-tooltip="Settings">
-          <svg viewBox="0 0 24 24" width="24" height="24">
+          <svg viewBox="0 0 24 24" width="28" height="28">
             <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
           </svg>
         </a></li>
@@ -694,6 +707,7 @@
             <button type="button" class="color-option" data-color="#00FF66" style="background-color: #00FF66"></button>
             <button type="button" class="color-option" data-color="#ff4a00" style="background-color: #ff4a00"></button>
             <button type="button" class="color-option" data-color="#d5dcdc" style="background-color: #d5dcdc"></button>
+            <button type="button" class="color-option" data-color="#858585" style="background-color: #858585"></button>
           </div>
         </div>
 
@@ -761,10 +775,22 @@
               <option value="4">X-Large</option>
               <option value="5">XX-Large</option>
             </select>
-            <button class="text-control-btn color-picker-btn" title="Text Color">
+            <div class="text-control-btn color-picker-btn" title="Text Color">
               <span class="iconify" data-icon="mdi:format-color-text"></span>
               <input type="color" class="color-picker-input" value="#ffffff">
-            </button>
+              <button class="default-color-btn" title="Default Text Color">
+                <span class="iconify" data-icon="mdi:format-color-text"></span>
+                <span class="iconify" data-icon="mdi:refresh" style="font-size: 12px; position: absolute; bottom: -2px; right: -2px;"></span>
+              </button>
+            </div>
+            <div class="text-control-btn bg-color-picker-btn" title="Background Color">
+              <span class="iconify" data-icon="mdi:format-color-highlight"></span>
+              <input type="color" class="bg-color-picker-input" value="#000000">
+              <button class="default-bg-color-btn" title="Default Background Color">
+                <span class="iconify" data-icon="mdi:format-color-highlight"></span>
+                <span class="iconify" data-icon="mdi:refresh" style="font-size: 12px; position: absolute; bottom: -2px; right: -2px;"></span>
+              </button>
+            </div>
           </div>
           <div class="separator"></div>
           <div class="note-control-group">
