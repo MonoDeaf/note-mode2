@@ -25,10 +25,6 @@ export const howToUse = [
     step: 4,
     title: 'Organize & Share',
     description: "Download your notes as JSON files to share with others. They can upload these files into their own groups to add your notes."
-  },
-  {
-    title: 'Graphs',
-    description: "Graghs"
   }
 ];
 
