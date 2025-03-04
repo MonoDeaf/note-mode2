@@ -19,19 +19,17 @@ export const howToUse = [
   {
     step: 3,
     title: 'Jot Your Notes',
-    description: "Use the formatting toolbar to edit your notes on the fly. Notes auto-save after character input as well."
+    description: "Use the formatting toolbar to edit your notes on the fly. Notes auto-save shortly after character input."
   },
   {
     step: 4,
     title: 'Organize & Share',
     description: "Download your notes as JSON files to share with others. They can upload these files into their own groups to add your notes."
+  },
+  {
+    title: 'Graphs',
+    description: "Graghs"
   }
 ];
 
-export const Graphs = [
-  {
-    title: 'hello',
-    description: "hello"
-  }
-];
     
