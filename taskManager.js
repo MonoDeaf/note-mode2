@@ -244,6 +244,53 @@ export class TaskManager {
     return stats;
   }
 
+  getAllNoteStatsForRange(days) {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+  
+    // Create array of dates
+    const dates = new Array(days).fill(0).map((_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      return date;
+    }).reverse();
+
+    const stats = dates.map(date => {
+      let created = 0;
+      let total = 0;
+
+      // Start and end of the day
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      this.groups.forEach(group => {
+        group.notes.forEach(note => {
+          const noteDate = new Date(note.createdAt);
+          
+          // Count notes created on this day
+          if (noteDate >= startOfDay && noteDate <= endOfDay) {
+            created++;
+          }
+          
+          // Count total notes up to this day
+          if (noteDate <= endOfDay) {
+            total++;
+          }
+        });
+      });
+
+      return {
+        date: date.toLocaleDateString(),
+        created,
+        total
+      };
+    });
+
+    return stats;
+  }
+
   getTotalStats() {
     let totalNotes = 0;
     const hourlyActivity = new Array(8).fill(0);

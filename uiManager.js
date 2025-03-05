@@ -9,6 +9,18 @@ export class UIManager {
         this.globalCharts = null;
         this.isMobileMenuOpen = false;
         this.isLoading = false;
+        this.welcomeMessages = [
+            "Welcome back, {user}!",
+            "What's note-able today, {user}?",
+            "Ready to write, {user}?",
+            "Hey {user}, let's take some notes!",
+            "Great to see you, {user}!",
+            "Time to be productive, {user}!",
+            "Welcome to your notes, {user}!",
+            "Let's capture some thoughts, {user}!",
+            "Hi {user}, ready to begin?",
+            "Your notes await, {user}!"
+        ];
 
         this.startUpdateCheck();
         this.loadUserSettings();
@@ -544,6 +556,14 @@ export class UIManager {
     updateHomePage() {
         if (this.isLoading) {
             return;
+        }
+
+        // Update welcome message with random greeting
+        const welcomeEl = document.getElementById('welcome');
+        if (welcomeEl) {
+            const username = document.getElementById('username')?.value || 'User';
+            const randomMessage = this.welcomeMessages[Math.floor(Math.random() * this.welcomeMessages.length)];
+            welcomeEl.textContent = randomMessage.replace('{user}', username);
         }
 
         const groupStats = document.getElementById('group-stats');
@@ -1597,67 +1617,14 @@ export class UIManager {
         
         this.globalCharts = {};
 
-        const weekStats = this.taskManager.getAllNoteStats();
+        const defaultRange = 7;
+        const weekStats = this.taskManager.getAllNoteStatsForRange(defaultRange);
         
-        this.globalCharts.allTasks = new Chart('allTasksChart', {
-            type: 'line',
-            data: {
-                labels: weekStats.map(stat => stat.date),
-                datasets: [{
-                    label: 'Total Tasks',
-                    data: weekStats.map(stat => stat.total),
-                    borderColor: '#7289da',
-                    backgroundColor: 'rgba(114, 137, 218, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
+        // Create and update charts with range selector
+        this.createRangeSelectableChart('allTasksChart', weekStats, 'Total Notes');
+        this.createRangeSelectableChart('creationTrendChart', weekStats, 'Created Notes');
 
-        this.globalCharts.creationTrend = new Chart('creationTrendChart', {
-            type: 'bar',
-            data: {
-                labels: weekStats.map(stat => stat.date),
-                datasets: [{
-                    data: weekStats.map(stat => stat.created),
-                    backgroundColor: '#43b581',
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-
+        // Create the other charts as before
         this.globalCharts.activityHeat = new Chart('activityHeatChart', {
             type: 'bar',
             data: {
@@ -1714,6 +1681,76 @@ export class UIManager {
                     }
                 }
             }
+        });
+    }
+
+    createRangeSelectableChart(chartId, initialData, title) {
+        const chartContainer = document.getElementById(chartId).parentElement;
+        
+        // Add range selector in header
+        const header = chartContainer.querySelector('h3');
+        const chartHeader = document.createElement('div');
+        chartHeader.className = 'chart-header';
+        header.parentNode.insertBefore(chartHeader, header);
+        chartHeader.appendChild(header);
+        
+        const rangeSelect = document.createElement('select');
+        rangeSelect.className = 'range-select';
+        rangeSelect.innerHTML = `
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+        `;
+        chartHeader.appendChild(rangeSelect);
+
+        // Create initial chart
+        this.globalCharts[chartId] = new Chart(chartId, {
+            type: chartId === 'creationTrendChart' ? 'bar' : 'line',
+            data: {
+                labels: initialData.map(stat => stat.date),
+                datasets: [{
+                    data: chartId === 'creationTrendChart' ? 
+                        initialData.map(stat => stat.created) :
+                        initialData.map(stat => stat.total),
+                    borderColor: '#7289da',
+                    backgroundColor: chartId === 'creationTrendChart' ? 
+                        '#43b581' :
+                        'rgba(114, 137, 218, 0.2)',
+                    tension: 0.4,
+                    fill: chartId !== 'creationTrendChart',
+                    borderRadius: chartId === 'creationTrendChart' ? 4 : 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Add range change handler
+        rangeSelect.addEventListener('change', (e) => {
+            const days = parseInt(e.target.value);
+            const newData = this.taskManager.getAllNoteStatsForRange(days);
+            
+            this.globalCharts[chartId].data.labels = newData.map(stat => stat.date);
+            this.globalCharts[chartId].data.datasets[0].data = 
+                chartId === 'creationTrendChart' ? 
+                    newData.map(stat => stat.created) :
+                    newData.map(stat => stat.total);
+            
+            this.globalCharts[chartId].update();
         });
     }
 
@@ -2033,7 +2070,7 @@ export class UIManager {
     }
 
     updateHelpPage() {
-        import('./help.js').then(({ shortcuts, howToUse }) => {
+        import('./help.js').then(({ shortcuts, howToUse, More }) => {
             const shortcutGrid = document.querySelector('#help-page .shortcut-grid');
             if (shortcutGrid) {
                 shortcutGrid.innerHTML = shortcuts.map(shortcut => `
@@ -2053,7 +2090,18 @@ export class UIManager {
                 howToGrid.innerHTML = howToUse.map(item => `
                     <div class="how-to-item">
                         <div class="how-to-title">
-                            <span class="step-number">${item.step}</span>
+                            ${item.title}
+                        </div>
+                        <p>${item.description}</p>
+                    </div>
+                `).join('');
+            }
+
+            const moreGrid = document.querySelector('#help-page .more-grid');
+            if (moreGrid) {
+                moreGrid.innerHTML = More.map(item => `
+                    <div class="how-to-item">
+                        <div class="how-to-title">
                             ${item.title}
                         </div>
                         <p>${item.description}</p>
