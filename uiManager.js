@@ -234,6 +234,21 @@ export class UIManager {
                 }
             });
         }
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#add-group-card')) {
+                this.initializeImageGrid(); // Use the stored reference
+            }
+        });
+
+        // Add calendar navigation handlers
+        document.getElementById('prev-month')?.addEventListener('click', () => {
+            this.navigateCalendar(-1);
+        });
+        
+        document.getElementById('next-month')?.addEventListener('click', () => {
+            this.navigateCalendar(1);
+        });
     }
 
     setupGroupModal() {
@@ -521,6 +536,8 @@ export class UIManager {
             this.updateUpdatesPage();
         } else if (page === 'help') {
             this.updateHelpPage();
+        } else if (page === 'tools') {
+            this.setupCalendar();
         }
     }
 
@@ -1176,6 +1193,7 @@ export class UIManager {
                             minute: '2-digit'
                         })}</span>
                     </div>
+                    ${!searchText ? `
                     <button class="task-edit-btn" data-task-id="${note.id}" title="Edit note title">
                         <span class="iconify" data-icon="mdi:edit-box"></span>
                     </button>
@@ -1184,6 +1202,7 @@ export class UIManager {
                             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                         </svg>
                     </button>
+                    ` : ''}
                 </div>
             `;
 
@@ -1196,19 +1215,25 @@ export class UIManager {
                 }
             });
 
-            // Add edit button handler
-            const editBtn = taskElement.querySelector('.task-edit-btn');
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.showEditTitleDialog(group.id, note.id, note.title);
-            });
+            // Add edit button handler - but only when not in search mode
+            if (!searchText) {
+                const editBtn = taskElement.querySelector('.task-edit-btn');
+                if (editBtn) {
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.showEditTitleDialog(group.id, note.id, note.title);
+                    });
+                }
 
-            // Add delete button handler
-            const deleteBtn = taskElement.querySelector('.task-delete-btn');
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.showDeleteTaskConfirmation(group.id, note.id);
-            });
+                // Add delete button handler - but only when not in search mode
+                const deleteBtn = taskElement.querySelector('.task-delete-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.showDeleteTaskConfirmation(group.id, note.id);
+                    });
+                }
+            }
 
             incompleteTasks.appendChild(taskElement);
         });
@@ -1220,10 +1245,10 @@ export class UIManager {
         const textarea = editor.querySelector('.note-textarea');
         const doneButton = editor.querySelector('.done-button');
         const closeButton = editor.querySelector('.close-note-editor');
-        const controlsRow = editor.querySelector('.controls-row');
+        const textControls = editor.querySelector('.text-controls');
         
         // Remove existing autosave indicator if it exists
-        const existingIndicator = controlsRow.querySelector('.autosave-indicator');
+        const existingIndicator = editor.querySelector('.autosave-indicator');
         if (existingIndicator) {
             existingIndicator.remove();
         }
@@ -1233,13 +1258,13 @@ export class UIManager {
             doneButton.remove();
         }
         
-        // Add autosave indicator
+        // Add autosave indicator next to text controls
         const autosaveIndicator = document.createElement('div');
         autosaveIndicator.className = 'autosave-indicator';
         autosaveIndicator.innerHTML = `
             <span class="iconify" data-icon="mdi:autorenew"></span>
         `;
-        controlsRow.appendChild(autosaveIndicator);
+        textControls.appendChild(autosaveIndicator);
 
         headerTitle.textContent = title;
         textarea.innerHTML = content;
@@ -1253,8 +1278,8 @@ export class UIManager {
             
             if (searchIndex !== -1) {
                 // Create temporary container to manipulate HTML safely
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = contentHtml;
+                const temp = document.createElement('div');
+                temp.innerHTML = contentHtml;
                 
                 // Highlight all instances of the search term
                 const highlightedContent = contentHtml.replace(
@@ -1268,7 +1293,10 @@ export class UIManager {
                 setTimeout(() => {
                     const firstHighlight = textarea.querySelector('.search-highlight');
                     if (firstHighlight) {
-                        firstHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstHighlight.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
                     }
                 }, 300);
             }
@@ -1279,8 +1307,8 @@ export class UIManager {
         editor.dataset.noteId = taskId;
 
         // Setup text formatting controls
-        const textControls = editor.querySelectorAll('.text-control-btn');
-        textControls.forEach(btn => {
+        const textControlBtns = editor.querySelectorAll('.text-control-btn');
+        textControlBtns.forEach(btn => {
             // Remove existing listeners
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
@@ -1395,6 +1423,191 @@ export class UIManager {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(handleAutosave, 1000);
         });
+
+        this.setupTagSystem(newTextarea);
+
+        // Add tags panel 
+        let tagsPanel = editor.querySelector('.tags-panel');
+        if (!tagsPanel) {
+          tagsPanel = document.createElement('div');
+          tagsPanel.className = 'tags-panel';
+          tagsPanel.innerHTML = `
+            <div class="tags-header">
+              <h4>Tags</h4>
+              <button class="tags-panel-close" title="Close tags panel">
+                <span class="iconify" data-icon="mdi:close" width="20" height="20"></span>
+              </button>
+            </div>
+            <div class="tags-list"></div>
+          `;
+          editor.appendChild(tagsPanel);
+
+          // Add close button functionality
+          const closeBtn = tagsPanel.querySelector('.tags-panel-close');
+          closeBtn.addEventListener('click', () => {
+            tagsPanel.classList.remove('active');
+            const noteContent = editor.querySelector('.note-content');
+            noteContent.classList.remove('tags-visible');
+          });
+
+          // Add toggle functionality
+          const toggleBtn = document.createElement('button');
+          toggleBtn.className = 'toggle-tags-btn';
+          toggleBtn.title = 'Toggle tags panel';
+          toggleBtn.innerHTML = `<span class="iconify" data-icon="material-symbols:bookmark-star-rounded"></span>`;
+          editor.appendChild(toggleBtn);
+          
+          const noteContent = editor.querySelector('.note-content');
+          
+          toggleBtn.addEventListener('click', () => {
+            const isActive = tagsPanel.classList.toggle('active');
+            noteContent.classList.toggle('tags-visible', isActive);
+          });
+        }
+    }
+
+    setupTagSystem(textarea) {
+        if (!textarea) return;
+
+        const editor = textarea.closest('.note-editor');
+        if (!editor) return;
+
+        // Create tags panel if it doesn't exist
+        let tagsPanel = editor.querySelector('.tags-panel');
+        if (!tagsPanel) {
+            tagsPanel = document.createElement('div');
+            tagsPanel.className = 'tags-panel';
+            tagsPanel.innerHTML = `
+                <div class="tags-header">
+                    <h4>Tags</h4>
+                    <button class="tags-panel-close" title="Close tags panel">
+                        <span class="iconify" data-icon="mdi:close" width="20" height="20"></span>
+                    </button>
+                </div>
+                <div class="tags-list"></div>
+            `;
+            editor.appendChild(tagsPanel);
+
+            // Add close button functionality
+            const closeBtn = tagsPanel.querySelector('.tags-panel-close');
+            closeBtn.addEventListener('click', () => {
+                tagsPanel.classList.remove('active');
+                const noteContent = editor.querySelector('.note-content');
+                noteContent.classList.remove('tags-visible');
+            });
+
+            // Add toggle functionality for the toggle button
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-tags-btn';
+            toggleBtn.title = 'Toggle tags panel';
+            toggleBtn.innerHTML = `<span class="iconify" data-icon="material-symbols:bookmark-star-rounded"></span>`;
+            editor.appendChild(toggleBtn);
+            
+            const noteContent = editor.querySelector('.note-content');
+            
+            toggleBtn.addEventListener('click', () => {
+                const isActive = tagsPanel.classList.toggle('active');
+                noteContent.classList.toggle('tags-visible', isActive);
+            });
+        }
+
+        // Function to update tags list
+        const updateTags = () => {
+            if (!textarea || !tagsPanel) return;
+
+            const content = textarea.innerHTML;
+            const tagMatches = content.match(/\[(.*?)\]/g) || [];
+            const tagsList = tagsPanel.querySelector('.tags-list');
+            if (!tagsList) return;
+            
+            tagsList.innerHTML = tagMatches.map(tag => {
+                const tagText = tag.slice(1, -1); // Remove brackets
+                return `
+                    <div class="tag-item" data-tag="${tagText}">
+                        <span class="tag-text">${tagText}</span>
+                        <button class="tag-locate" title="Locate in text">
+                            <span class="iconify" data-icon="mdi:target"></span>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers for tag location
+            tagsList.querySelectorAll('.tag-locate').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tag = btn.parentElement.dataset.tag;
+                    const bracketedTag = `[${tag}]`;
+                    
+                    // Remove any existing highlights
+                    textarea.querySelectorAll('.tag-highlight').forEach(el => {
+                        const parent = el.parentNode;
+                        parent.replaceChild(document.createTextNode(el.textContent), el);
+                    });
+
+                    // Find the text node containing the tag
+                    const textNodes = [];
+                    const walk = document.createTreeWalker(
+                        textarea,
+                        NodeFilter.SHOW_TEXT,
+                        null,
+                        false
+                    );
+
+                    let node;
+                    while ((node = walk.nextNode())) {
+                        textNodes.push(node);
+                    }
+
+                    // Find the node containing the tag
+                    for (let node of textNodes) {
+                        const text = node.textContent;
+                        const tagIndex = text.indexOf(bracketedTag);
+                        
+                        if (tagIndex !== -1) {
+                            // Create wrapper for new highlight
+                            const highlightWrapper = document.createElement('span');
+                            highlightWrapper.className = 'tag-highlight';
+                            
+                            // Create a range for the tag text
+                            const range = document.createRange();
+                            range.setStart(node, tagIndex);
+                            range.setEnd(node, tagIndex + bracketedTag.length);
+                            
+                            const tagContent = range.extractContents();
+                            highlightWrapper.appendChild(tagContent);
+                            range.insertNode(highlightWrapper);
+                            
+                            // Scroll the tag into view
+                            highlightWrapper.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center' 
+                            });
+                            break;
+                        }
+                    }
+                });
+            });
+        };
+
+        // Watch for content changes
+        let observer;
+        try {
+            observer = new MutationObserver(updateTags);
+            observer.observe(textarea, {
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+
+            // Initial tags update
+            updateTags();
+        } catch (error) {
+            console.warn('Error setting up tag observer:', error);
+        }
+
+        return () => {
+            if (observer) observer.disconnect();
+        }; // Return cleanup function
     }
 
     showDeleteTaskConfirmation(groupId, taskId) {
@@ -1442,7 +1655,6 @@ export class UIManager {
                 <canvas id="groupCreatedChart"></canvas>
             </div>
         `;
-
         document.querySelector('.tasks-container').appendChild(chartContainer);
 
         const chartConfig = {
@@ -1755,10 +1967,10 @@ export class UIManager {
     }
 
     updateUpdatesPage() {
-        const updatesContainer = document.querySelector('.updates-container');
-        if (!updatesContainer) return;
-
         import('./updates.js').then(({ updates, setLastSeenVersion, getLatestVersion }) => {
+            const updatesContainer = document.querySelector('.updates-container');
+            if (!updatesContainer) return;
+
             updatesContainer.innerHTML = updates.map(update => `
                 <div class="update-card">
                     <div class="version">Version ${update.version}</div>
@@ -2067,6 +2279,219 @@ export class UIManager {
                 }, 150);
             }
         }, { passive: false });
+    }
+
+    setupCalendar() {
+        if (!window.dayjs) {
+            // Load dayjs if it's not already loaded
+            const script = document.createElement('script');
+            script.src = "https://cdn.jsdelivr.net/npm/dayjs@1.11.7/dayjs.min.js";
+            script.onload = () => {
+                this.initializeCalendar();
+            };
+            document.head.appendChild(script);
+        } else {
+            this.initializeCalendar();
+        }
+    }
+
+    initializeCalendar() {
+        this.currentCalendarDate = dayjs();
+        this.selectedCalendarDate = dayjs();
+        this.renderCalendar();
+    }
+
+    renderCalendar() {
+        const currentMonth = this.currentCalendarDate.format('MMMM YYYY');
+        document.getElementById('current-month').textContent = currentMonth;
+        
+        const calendarDays = document.getElementById('calendar-days');
+        calendarDays.innerHTML = '';
+        
+        // Get start of month and calculate days for previous month's display
+        const firstDayOfMonth = this.currentCalendarDate.startOf('month');
+        const startDay = firstDayOfMonth.day(); // Day of week (0-6, 0 is Sunday)
+        
+        // Get prev month days to show
+        const prevMonth = this.currentCalendarDate.subtract(1, 'month');
+        const daysInPrevMonth = prevMonth.daysInMonth();
+        
+        // Get current month's days
+        const daysInMonth = this.currentCalendarDate.daysInMonth();
+        
+        // Get note dates for current month (used to mark dates with notes)
+        const noteDates = this.getNotesByDate();
+        
+        // Render previous month's trailing days
+        for (let i = startDay - 1; i >= 0; i--) {
+            const dayNumber = daysInPrevMonth - i;
+            const dateStr = prevMonth.date(dayNumber).format('YYYY-MM-DD');
+            
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day other-month';
+            dayDiv.textContent = dayNumber;
+            dayDiv.dataset.date = dateStr;
+            
+            if (noteDates[dateStr]) {
+                dayDiv.classList.add('has-notes');
+            }
+            
+            dayDiv.addEventListener('click', () => this.selectCalendarDate(dateStr));
+            calendarDays.appendChild(dayDiv);
+        }
+        
+        // Render current month's days
+        const today = dayjs().format('YYYY-MM-DD');
+        
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dateStr = this.currentCalendarDate.date(i).format('YYYY-MM-DD');
+            
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day';
+            dayDiv.textContent = i;
+            dayDiv.dataset.date = dateStr;
+            
+            if (dateStr === today) {
+                dayDiv.classList.add('today');
+            }
+            
+            if (dateStr === this.selectedCalendarDate.format('YYYY-MM-DD')) {
+                dayDiv.classList.add('selected');
+            }
+            
+            if (noteDates[dateStr]) {
+                dayDiv.classList.add('has-notes');
+            }
+            
+            dayDiv.addEventListener('click', () => this.selectCalendarDate(dateStr));
+            calendarDays.appendChild(dayDiv);
+        }
+        
+        // Render next month's leading days
+        const daysToAdd = 42 - (startDay + daysInMonth); // 42 = 6 rows of 7 days
+        const nextMonth = this.currentCalendarDate.add(1, 'month');
+        
+        for (let i = 1; i <= daysToAdd; i++) {
+            const dateStr = nextMonth.date(i).format('YYYY-MM-DD');
+            
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day other-month';
+            dayDiv.textContent = i;
+            dayDiv.dataset.date = dateStr;
+            
+            if (noteDates[dateStr]) {
+                dayDiv.classList.add('has-notes');
+            }
+            
+            dayDiv.addEventListener('click', () => this.selectCalendarDate(dateStr));
+            calendarDays.appendChild(dayDiv);
+        }
+        
+        // Show notes for selected date
+        this.showNotesForDate(this.selectedCalendarDate.format('YYYY-MM-DD'));
+    }
+
+    navigateCalendar(monthDiff) {
+        this.currentCalendarDate = this.currentCalendarDate.add(monthDiff, 'month');
+        this.renderCalendar();
+    }
+
+    selectCalendarDate(dateStr) {
+        // Remove selected class from previously selected day
+        const prevSelected = document.querySelector('.calendar-day.selected');
+        if (prevSelected) {
+            prevSelected.classList.remove('selected');
+        }
+        
+        // Add selected class to newly selected day
+        const selectedDay = document.querySelector(`.calendar-day[data-date="${dateStr}"]`);
+        if (selectedDay) {
+            selectedDay.classList.add('selected');
+        }
+        
+        this.selectedCalendarDate = dayjs(dateStr);
+        this.showNotesForDate(dateStr);
+    }
+
+    getNotesByDate() {
+        const noteDates = {};
+        
+        this.taskManager.groups.forEach(group => {
+            if (group.notes) {
+                group.notes.forEach(note => {
+                    const createdDate = dayjs(note.createdAt).format('YYYY-MM-DD');
+                    if (!noteDates[createdDate]) {
+                        noteDates[createdDate] = [];
+                    }
+                    noteDates[createdDate].push({
+                        id: note.id,
+                        groupId: group.id,
+                        groupName: group.name,
+                        title: note.title,
+                        createdAt: note.createdAt
+                    });
+                });
+            }
+        });
+        
+        return noteDates;
+    }
+
+    showNotesForDate(dateStr) {
+        const selectedDateElement = document.getElementById('selected-date');
+        const notesListElement = document.getElementById('date-notes-list');
+        
+        if (!selectedDateElement || !notesListElement) return;
+        
+        // Format date display
+        const formattedDate = dayjs(dateStr).format('MMMM D, YYYY');
+        selectedDateElement.textContent = formattedDate;
+        
+        // Get notes for selected date
+        const noteDates = this.getNotesByDate();
+        const notesForDate = noteDates[dateStr] || [];
+        
+        // Render notes list
+        if (notesForDate.length === 0) {
+            notesListElement.innerHTML = '<div id="no-notes-message">No notes created on this date</div>';
+            return;
+        }
+        
+        notesListElement.innerHTML = '';
+        
+        notesForDate.forEach(note => {
+            const noteTime = dayjs(note.createdAt).format('h:mm A');
+            
+            const noteItem = document.createElement('div');
+            noteItem.className = 'date-note-item';
+            noteItem.innerHTML = `
+                <div class="date-note-content">
+                    <div class="date-note-title">${note.title}</div>
+                    <div class="date-note-group">in ${note.groupName}</div>
+                </div>
+                <div class="date-note-time">${noteTime}</div>
+            `;
+            
+            noteItem.addEventListener('click', () => {
+                // Set current group and navigate to it
+                const group = this.taskManager.groups.get(note.groupId);
+                if (group) {
+                    this.taskManager.currentGroup = group;
+                    // Enable groups nav link when a group is selected
+                    document.querySelector('[data-page="groups"]').classList.add('enabled');
+                    this.updateGroupPage(note.groupId);
+                    this.navigateTo('groups');
+                    
+                    // Open the note editor for this note
+                    const noteContent = this.taskManager.getNoteContent(note.groupId, note.id);
+                    setTimeout(() => {
+                        this.openNoteEditor(note.groupId, note.id, note.title, noteContent);
+                    }, 100);
+                }
+            });
+            
+            notesListElement.appendChild(noteItem);
+        });
     }
 
     updateHelpPage() {

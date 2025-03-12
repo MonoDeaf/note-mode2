@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600&family=Lato:wght@400;700&family=Poppins:wght@400;500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/dayjs.min.js"></script>
   <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
   <script type="module" src="app.js"></script>
   <style>
@@ -357,7 +358,7 @@
           <span class="iconify" data-icon="mdi:graph-box" width="28" height="28"></span>
         </a></li>
         <li><a href="#" data-page="tools" data-tooltip="Tools">
-          <span class="iconify" data-icon="mdi:timer" width="28" height="28"></span>
+          <span class="iconify" data-icon="material-symbols:calendar-clock-rounded" width="28" height="28"></span>
         </a></li>
         <li><a href="#" data-page="updates" data-tooltip="Updates" style="position: relative;">
           <span class="iconify" data-icon="mdi:message-alert" width="28" height="28"></span>
@@ -465,27 +466,32 @@
         <div class="tools-grid">
           <div class="tool-card">
             <div class="tool-header">
-              <h3>Timer</h3>
+              <h3>Calendar</h3>
             </div>
             <div class="tool-content">
-              <div class="timer-container">
-                <div class="timer-dial">
-                  <svg viewBox="0 0 100 100">
-                    <circle class="timer-track" cx="50" cy="50" r="45" />
-                    <circle class="timer-progress" cx="50" cy="50" r="45" />
-                  </svg>
-                  <div class="timer-display">00:00</div>
+              <div class="calendar-container">
+                <div class="calendar-nav">
+                  <button id="prev-month" class="calendar-nav-btn">
+                    <span class="iconify" data-icon="mdi:chevron-left"></span>
+                  </button>
+                  <div id="current-month">January 2023</div>
+                  <button id="next-month" class="calendar-nav-btn">
+                    <span class="iconify" data-icon="mdi:chevron-right"></span>
+                  </button>
                 </div>
-                <div class="timer-controls">
-                  <div class="timer-input">
-                    <input type="number" min="1" max="60" value="25" id="timer-minutes">
-                    <span>minutes</span>
-                  </div>
-                  <div class="timer-buttons">
-                    <button class="timer-btn start">Start</button>
-                    <button class="timer-btn pause" disabled>Pause</button>
-                    <button class="timer-btn reset" disabled>Reset</button>
-                  </div>
+                <div class="calendar-weekdays">
+                  <div>Sun</div>
+                  <div>Mon</div>
+                  <div>Tue</div>
+                  <div>Wed</div>
+                  <div>Thu</div>
+                  <div>Fri</div>
+                  <div>Sat</div>
+                </div>
+                <div id="calendar-days" class="calendar-days"></div>
+                <div id="calendar-event-list" class="calendar-event-list">
+                  <h4>Notes on <span id="selected-date">today</span></h4>
+                  <div id="date-notes-list"></div>
                 </div>
               </div>
             </div>
@@ -811,7 +817,7 @@
       </div>
     </div>
     <div class="note-content">
-      <div class="note-textarea" contenteditable="true" placeholder="Write your note here... (Tip: Use the '/' key to access formatting commands)"></div>
+      <div class="note-textarea" contenteditable="true" placeholder="Write your note here... (Tip: Enclose words or sentences in [brackets] to tag them)"></div>
     </div>
   </div>
 

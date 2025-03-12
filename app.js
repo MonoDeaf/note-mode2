@@ -2,7 +2,6 @@ import { TaskManager } from './taskManager.js';
 import { UIManager } from './uiManager.js';
 import { StorageManager } from './storageManager.js';
 import { NotificationManager } from './notifications.js';
-import { Timer } from './timer.js';
 
 class App {
   constructor() {
@@ -16,10 +15,6 @@ class App {
       window.taskManager = this.taskManager;
       window.uiManager = this.ui;
       window.notificationManager = this.notifications;
-      
-      if (document.querySelector('.timer-container')) {
-        this.timer = new Timer();
-      }
       
       this.init();
     });

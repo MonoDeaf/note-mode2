@@ -1100,7 +1100,6 @@ dialog input {
   background: var(--bg-primary);
   padding: 0.5rem;
   border-radius: 8px;
-  width: fit-content;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -1108,7 +1107,6 @@ dialog input {
 .note-control-group {
   display: flex;
   gap: 0.25rem;
-  align-items: center;
 }
 
 .command-list {
@@ -2417,7 +2415,7 @@ a {
 
 .note-editor-header h3 {
   font-size: 1.8rem;
-  margin: 0;
+  margin-left: 0;
   color: var(--text-primary);
 }
 
@@ -2475,7 +2473,7 @@ a {
   color: var(--text-secondary);
   opacity: 0;
   transition: opacity 0.2s ease;
-  margin-left: auto;
+  margin-left: 0; /* Remove left margin */
 }
 
 .autosave-indicator.active {
@@ -2484,6 +2482,9 @@ a {
 
 .autosave-indicator .iconify {
   animation: spin 1s linear infinite;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #ff4a00;
 }
 
 .autosave-indicator.error {
@@ -2683,23 +2684,14 @@ body.light-mode .form-group input[type="text"]:focus {
 
 .search-container input {
   width: 100%;
-  padding: 0.8rem 1rem 0.8rem 2.5rem;
+  padding: 0.8rem;
+  padding-left: 2.5rem; /* Added left padding to make room for the icon */
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.95rem;
   color: var(--text-primary);
   transition: all 0.2s ease;
-}
-
-.search-container input:focus {
-  outline: none;
-  border-color: rgba(var(--text-rgb), 0.2);
-}
-
-.search-container input::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.5;
 }
 
 .search-container .search-icon {
@@ -3017,6 +3009,7 @@ body.light-mode .form-group input[type="text"]:focus {
   display: flex;
   align-items: center;
   gap: 1rem;
+  width: 100%;
 }
 
 .note-editor-header {
@@ -3029,7 +3022,7 @@ body.light-mode .form-group input[type="text"]:focus {
 
 .note-editor-header h3 {
   font-size: 1.8rem;
-  margin: 0;
+  margin-left: 2rem;
   color: var(--text-primary);
 }
 
@@ -3423,4 +3416,333 @@ kbd {
 .range-select:focus {
   outline: none;
   border-color: var(--text-secondary);
+}
+
+.tags-panel {
+  position: absolute; 
+  right: -250px;
+  top: 0;
+  bottom: 0;
+  width: 250px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+}
+
+.note-editor.active .tags-panel.active {
+  transform: translateX(-250px);
+}
+
+.tags-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tags-header h4 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: normal;
+}
+
+.toggle-tags-btn {
+  position: fixed;
+  right: 0;
+  top: 80px; /* Position it below the close button which is around 60px */
+  transform: none; /* Remove the vertical centering transform */
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+  pointer-events: none; /* Prevent interaction when hidden */
+}
+
+.note-editor.active .toggle-tags-btn {
+  opacity: 0.7; /* Show only when note editor is active */
+  pointer-events: auto; /* Enable interaction */
+}
+
+.note-editor.active .toggle-tags-btn:hover {
+  opacity: 1;
+}
+
+.toggle-tags-btn .iconify {
+  width: 24px;
+  height: 24px;
+}
+
+.tags-panel.active + .toggle-tags-btn {
+  opacity: 0; /* Hide the button when panel is active */
+  pointer-events: none; /* Disable interaction when hidden */
+}
+
+@media (max-width: 768px) {
+  .toggle-tags-btn {
+    top: 80px; /* Keep consistent position on mobile */
+  }
+  
+  .tags-panel {
+    position: fixed;
+    right: -100%;
+    width: 100%;
+    z-index: 2;
+  }
+
+  .note-editor.active .tags-panel.active {
+    transform: translateX(-100%);
+  }
+  
+  .tags-panel.active + .toggle-tags-btn {
+    right: 100%;
+  }
+}
+
+.tag-highlight {
+  background-color: rgba(var(--text-rgb), 0.2);
+  padding: 2px 4px;
+  border-radius: 4px;
+  animation: flashHighlight 1s ease;
+}
+
+@keyframes flashHighlight {
+  0% { background-color: rgba(var(--text-rgb), 0.4); }
+  100% { background-color: rgba(var(--text-rgb), 0.2); }
+}
+
+.tag-item {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.tag-item:last-child {
+  margin-bottom: 0;
+}
+
+.tag-text {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.tag-locate {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.tag-locate:hover {
+  opacity: 1;
+}
+
+.tags-list {
+  padding: 1rem;
+  padding-right: 2rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+
+.tag-locate:hover {
+  opacity: 1;
+}
+
+.tags-panel-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.tags-panel-close:hover {
+  opacity: 1;
+}
+
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.calendar-nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.calendar-nav-btn:hover {
+  background-color: rgba(var(--text-rgb), 0.1);
+}
+
+#current-month {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  border-radius: 10%;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.calendar-day:hover {
+  background-color: rgba(var(--text-rgb), 0.1);
+}
+
+.calendar-day.today {
+  border: 1px solid var(--accent);
+}
+
+.calendar-day.selected {
+  background-color: var(--border-color);
+  color: white;
+}
+
+.calendar-day.has-notes::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  
+}
+
+.calendar-day.other-month {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.calendar-event-list {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.calendar-event-list h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.date-note-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: rgba(var(--text-rgb), 0.05);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-note-item:hover {
+  background-color: rgba(var(--text-rgb), 0.1);
+}
+
+.date-note-group {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.25rem;
+}
+
+.date-note-title {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-note-content {
+  flex: 1;
+}
+
+.date-note-time {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  margin-left: 1rem;
+}
+
+#no-notes-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 1rem;
 }
