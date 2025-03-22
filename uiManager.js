@@ -591,6 +591,7 @@ export class UIManager {
         const addGroupCard = document.createElement('div');
         addGroupCard.className = 'group-card add-group-card';
         addGroupCard.id = 'add-group-card';
+        addGroupCard.style.animationDelay = '0s';
         addGroupCard.innerHTML = `
             <span class="iconify" data-icon="material-symbols:note-stack-add" width="48" height="48"></span>
             <h3>Create New Group</h3>
@@ -599,13 +600,15 @@ export class UIManager {
 
         if (this.taskManager.groups && this.taskManager.groups.size > 0) {
             // Use the groupOrder array to determine display order
-            this.taskManager.groupOrder.forEach(groupId => {
+            this.taskManager.groupOrder.forEach((groupId, index) => {
                 const group = this.taskManager.groups.get(groupId);
                 if (!group) return;
                 
                 const groupCard = document.createElement('div');
                 groupCard.className = 'group-card';
                 groupCard.dataset.groupId = group.id;
+                // Add animation delay based on index
+                groupCard.style.animationDelay = `${(index + 1) * 0.1}s`;
                 
                 const background = group.background || { type: 'color', value: '#ffffff' };
                 const textColor = background.type === 'image' ? '#ffffff' : '#000000';
@@ -618,7 +621,7 @@ export class UIManager {
                         groupCard.style.backgroundImage = 'none';
                         groupCard.innerHTML = `
                             <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
-                                        background: rgba(0,0,0,0.3); border-radius: inherit; z-index: 1;"></div>
+                                       background: rgba(0,0,0,0.3); border-radius: inherit; z-index: 1;"></div>
                         `;
                     }
                 }
