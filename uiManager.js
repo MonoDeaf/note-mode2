@@ -1904,58 +1904,26 @@ export class UIManager {
         
         // Add range selector in header
         const header = chartContainer.querySelector('h3');
-        const chartHeader = document.createElement('div');
-        chartHeader.className = 'chart-header';
-        header.parentNode.insertBefore(chartHeader, header);
-        chartHeader.appendChild(header);
+        let chartHeader = chartContainer.querySelector('.chart-header');
         
-        const rangeSelect = document.createElement('select');
-        rangeSelect.className = 'range-select';
-        rangeSelect.innerHTML = `
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-        `;
-        chartHeader.appendChild(rangeSelect);
-
-        // Create initial chart
-        this.globalCharts[chartId] = new Chart(chartId, {
-            type: chartId === 'creationTrendChart' ? 'bar' : 'line',
-            data: {
-                labels: initialData.map(stat => stat.date),
-                datasets: [{
-                    data: chartId === 'creationTrendChart' ? 
-                        initialData.map(stat => stat.created) :
-                        initialData.map(stat => stat.total),
-                    borderColor: '#7289da',
-                    backgroundColor: chartId === 'creationTrendChart' ? 
-                        '#43b581' :
-                        'rgba(114, 137, 218, 0.2)',
-                    tension: 0.4,
-                    fill: chartId !== 'creationTrendChart',
-                    borderRadius: chartId === 'creationTrendChart' ? 4 : 0
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-
-        // Add range change handler
-        rangeSelect.addEventListener('change', (e) => {
+        // Only create the chart header and range selector if it doesn't already exist
+        if (!chartHeader) {
+          chartHeader = document.createElement('div');
+          chartHeader.className = 'chart-header';
+          header.parentNode.insertBefore(chartHeader, header);
+          chartHeader.appendChild(header);
+          
+          const rangeSelect = document.createElement('select');
+          rangeSelect.className = 'range-select';
+          rangeSelect.innerHTML = `
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+          `;
+          chartHeader.appendChild(rangeSelect);
+          
+          // Add range change handler
+          rangeSelect.addEventListener('change', (e) => {
             const days = parseInt(e.target.value);
             const newData = this.taskManager.getAllNoteStatsForRange(days);
             
@@ -1966,6 +1934,43 @@ export class UIManager {
                     newData.map(stat => stat.total);
             
             this.globalCharts[chartId].update();
+          });
+        }
+
+        // Create initial chart
+        this.globalCharts[chartId] = new Chart(chartId, {
+          type: chartId === 'creationTrendChart' ? 'bar' : 'line',
+          data: {
+            labels: initialData.map(stat => stat.date),
+            datasets: [{
+              data: chartId === 'creationTrendChart' ? 
+                initialData.map(stat => stat.created) :
+                initialData.map(stat => stat.total),
+              borderColor: '#7289da',
+              backgroundColor: chartId === 'creationTrendChart' ? 
+                '#43b581' :
+                'rgba(114, 137, 218, 0.2)',
+              tension: 0.4,
+              fill: chartId !== 'creationTrendChart',
+              borderRadius: chartId === 'creationTrendChart' ? 4 : 0
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                }
+              }
+            }
+          }
         });
     }
 
