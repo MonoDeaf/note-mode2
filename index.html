@@ -42,6 +42,22 @@
       from { opacity: 0; transform: translateY(-5px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    .forgot-password {
+      text-align: center;
+      margin: 1rem 0;
+    }
+    
+    .forgot-password a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s ease;
+    }
+    
+    .forgot-password a:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -69,6 +85,9 @@
             </div>
             <button type="submit" class="login-btn">Sign In</button>
             <button type="button" class="register-btn" id="show-register">Create Account</button>
+            <div class="forgot-password">
+              <a href="#" id="forgot-password-link">Forgot Password?</a>
+            </div>
           </form>
           <form id="register-form" class="register-form hidden">
             <div class="form-group">
@@ -95,7 +114,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
     import { getLatestVersion } from './updates.js';
 
@@ -272,6 +291,39 @@
           document.getElementById('login-splash').classList.add('active');
         } catch (error) {
           console.error('Logout failed:', error);
+        }
+      });
+
+      document.getElementById('forgot-password-link').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        
+        if (!email) {
+          showError('login', 'Please enter your email address to reset your password');
+          return;
+        }
+        
+        try {
+          await sendPasswordResetEmail(auth, email);
+          const dialog = document.createElement('dialog');
+          dialog.className = 'confirmation-dialog';
+          dialog.innerHTML = `
+            <h3>Password Reset Email Sent</h3>
+            <p>Check your email for instructions to reset your password.</p>
+            <div class="modal-buttons">
+              <button class="btn" id="ok-button">OK</button>
+            </div>
+          `;
+          
+          document.body.appendChild(dialog);
+          dialog.showModal();
+          
+          dialog.querySelector('#ok-button').onclick = () => {
+            dialog.close();
+            dialog.remove();
+          };
+        } catch (error) {
+          showError('login', 'Error sending password reset email. Please check if the email is correct.');
         }
       });
 

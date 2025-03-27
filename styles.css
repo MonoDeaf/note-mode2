@@ -911,8 +911,8 @@ dialog input {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   font-size: 1rem;
-  margin-bottom: 1rem;
   color: var(--text-primary);
+  transition: all 0.2s ease;
 }
 
 .group-customization {
@@ -920,6 +920,7 @@ dialog input {
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-bottom: 2rem;
+  margin-top: 2rem;
 }
 
 .color-picker h4,
@@ -2467,6 +2468,19 @@ a {
   opacity: 0.5;
 }
 
+.note-textarea[contenteditable="true"] * {
+  color: inherit;
+  background-color: inherit;
+}
+
+.note-textarea[contenteditable="true"] *:not(.custom-color) {
+  color: var(--text-primary);
+}
+
+.note-textarea[contenteditable="true"] *:not(.custom-background) {
+  background-color: var(--bg-primary);
+}
+
 .done-button {
   display: none;
 }
@@ -3415,8 +3429,8 @@ kbd {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 0.5rem;
-  border-radius: 4px;
+  padding: 0.4rem;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 0.9rem;
 }

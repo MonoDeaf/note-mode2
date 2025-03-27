@@ -616,9 +616,10 @@ export class UIManager {
                 if (background) {
                     if (background.type === 'color') {
                         groupCard.style.backgroundColor = background.value;
+                        groupCard.style.setProperty('--bg-image', 'none');
                     } else if (background.type === 'image') {
                         groupCard.style.setProperty('--bg-image', `url(${background.value})`);
-                        groupCard.style.backgroundImage = 'none';
+                        groupCard.style.backgroundColor = 'transparent';
                         groupCard.innerHTML = `
                             <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
                                        background: rgba(0,0,0,0.3); border-radius: inherit; z-index: 1;"></div>
@@ -661,7 +662,7 @@ export class UIManager {
                             </button>
                         </div>
                     </div>
-                    <div class="corner-arrow">
+                    <div class="corner-arrow" style="color: ${textColor};">
                         <span class="iconify" data-icon="material-symbols:arrow-outward" width="24" height="24"></span>
                     </div>
                     <div style="position: relative; z-index: 1;">
@@ -1351,13 +1352,29 @@ export class UIManager {
         if (colorPicker) {
             colorPicker.addEventListener('input', (e) => {
                 document.execCommand('foreColor', false, e.target.value);
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const spans = range.commonAncestorContainer.querySelectorAll('span[style*="color"]');
+                    spans.forEach(span => {
+                        span.classList.add('custom-color');
+                    });
+                }
             });
         }
 
         const defaultColorBtn = editor.querySelector('.default-color-btn');
         if (defaultColorBtn) {
             defaultColorBtn.addEventListener('click', () => {
-                document.execCommand('foreColor', false, getComputedStyle(document.body).getPropertyValue('--text-primary'));
+                document.execCommand('foreColor', false, 'var(--text-primary)');
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const spans = range.commonAncestorContainer.querySelectorAll('span[style*="color"]');
+                    spans.forEach(span => {
+                        span.classList.remove('custom-color');
+                    });
+                }
             });
         }
 
@@ -1365,15 +1382,29 @@ export class UIManager {
         if (bgColorPicker) {
             bgColorPicker.addEventListener('input', (e) => {
                 document.execCommand('backColor', false, e.target.value);
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const spans = range.commonAncestorContainer.querySelectorAll('span[style*="background-color"]');
+                    spans.forEach(span => {
+                        span.classList.add('custom-background');
+                    });
+                }
             });
         }
 
         const defaultBgColorBtn = editor.querySelector('.default-bg-color-btn');
         if (defaultBgColorBtn) {
             defaultBgColorBtn.addEventListener('click', () => {
-                // Get the computed background color of the note content area
-                const noteContentBg = getComputedStyle(textarea).getPropertyValue('background-color');
-                document.execCommand('backColor', false, noteContentBg);
+                document.execCommand('backColor', false, 'var(--bg-primary)');
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const spans = range.commonAncestorContainer.querySelectorAll('span[style*="background-color"]');
+                    spans.forEach(span => {
+                        span.classList.remove('custom-background');
+                    });
+                }
             });
         }
 
